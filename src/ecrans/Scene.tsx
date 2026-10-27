@@ -29,11 +29,11 @@ export function Scene({ etat, actions }: { etat: EtatPartie; actions: Actions })
           flexShrink: 0,
         }}
       >
-        <div style={{ position: "absolute", left: -40, top: 0, width: 250, height: 280, background: "var(--encre)", transform: "skewX(-18deg)" }} />
-        <div style={{ position: "absolute", left: 40, bottom: 48, width: 110, height: 150 }}>
+        <div style={{ position: "absolute", left: -90, top: 0, width: 230, height: 280, background: "var(--encre)", transform: "skewX(-14deg)" }} />
+        <div style={{ position: "absolute", left: 14, bottom: 48, width: 100, height: 140 }}>
           <Silhouette variante={victime} fond="transparent" />
         </div>
-        <div style={{ position: "absolute", left: 30, bottom: 50, width: 140, height: 8, background: "var(--rouge)" }} />
+        <div style={{ position: "absolute", left: 4, bottom: 50, width: 120, height: 8, background: "var(--rouge)" }} />
         <a href="#/" className="lien-retour" style={{ position: "absolute", left: 16, top: "calc(8px + env(safe-area-inset-top))", color: "var(--papier)" }}>
           ← DOSSIERS
         </a>
@@ -42,7 +42,7 @@ export function Scene({ etat, actions }: { etat: EtatPartie; actions: Actions })
             position: "absolute",
             right: 16,
             top: "calc(56px + env(safe-area-inset-top))",
-            width: "52%",
+            width: "58%",
             display: "flex",
             flexDirection: "column",
             gap: 6,
@@ -52,7 +52,7 @@ export function Scene({ etat, actions }: { etat: EtatPartie; actions: Actions })
           <span className="machine" style={{ fontSize: 12 }}>
             {pub.cadre.ville.toUpperCase()} · {pub.cadre.heure.toUpperCase()}
           </span>
-          <h1 className="titre apparait" style={{ fontSize: 50, overflowWrap: "break-word" }}>{etat.affaire.titre.toUpperCase()}</h1>
+          <h1 className="titre apparait" style={{ fontSize: 44, overflowWrap: "break-word" }}>{etat.affaire.titre.toUpperCase()}</h1>
           <span className="machine" style={{ fontSize: 12 }}>{pub.cadre.annee}</span>
         </div>
       </header>

@@ -1,10 +1,9 @@
 import { supabase } from "./supabase";
 import { VAPID_PUBLIC_KEY } from "./config";
 
-// Les notifications passent par la table push_subscriptions de la
-// plateforme (même projet Supabase, mêmes clés VAPID) ; c'est le worker
-// du VPS qui les envoie. Sur iPhone, il faut d'abord ajouter le site à
-// l'écran d'accueil.
+// Abonnements rangés dans enquete_abonnements_push (mêmes clés VAPID que
+// la plateforme) ; c'est le worker du VPS qui envoie les notifications.
+// Sur iPhone, il faut d'abord ajouter le site à l'écran d'accueil.
 export type EtatNotifs = "active" | "inactive" | "indisponible";
 
 export function etatNotifications(): EtatNotifs {
@@ -32,7 +31,7 @@ export async function activerNotifications(): Promise<EtatNotifs> {
   const json = abonnement.toJSON();
   const { data } = await supabase.auth.getUser();
   if (!data.user || !json.keys) return "inactive";
-  const { error } = await supabase.from("push_subscriptions").upsert(
+  const { error } = await supabase.from("enquete_abonnements_push").upsert(
     { user_id: data.user.id, endpoint: abonnement.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
     { onConflict: "endpoint" }
   );

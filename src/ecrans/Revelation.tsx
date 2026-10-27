@@ -26,7 +26,7 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
           {mots.join(" ")} <span className="rouge">{dernier}</span>
         </h1>
 
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, textAlign: "justify", hyphens: "auto" }}>{sol.recit}</p>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, }}>{sol.recit}</p>
 
         <div
           style={{

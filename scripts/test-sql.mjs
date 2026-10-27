@@ -2,6 +2,7 @@
 // en duel de bout en bout. Usage : node scripts/test-sql.mjs [affaires/x.json]
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
+import { charger } from "../worker/affaire.mjs";
 
 const db = new PGlite();
 const JULES = "11111111-1111-1111-1111-111111111111";
@@ -19,7 +20,7 @@ await db.exec(readFileSync(new URL("../supabase/migrations/0001_enquete.sql", im
 await db.exec(`insert into enquete_joueurs values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');`);
 
 const fichier = process.argv[2] ?? new URL("../affaires/01-vieux-port.json", import.meta.url);
-const affaire = JSON.parse(readFileSync(fichier, "utf8"));
+const affaire = charger(fichier);
 const { rows } = await db.query(
   "insert into enquete_affaires (titre, public) values ($1, $2) returning id",
   [affaire.titre, affaire.public]

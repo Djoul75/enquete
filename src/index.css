@@ -1,0 +1,195 @@
+:root {
+  --encre: #0b0b0b;
+  --papier: #ede8dd;
+  --rouge: #d7261e;
+  --gris: #8a867e;
+  --gris-clair: #b5b0a7;
+  --trait: #2a2925;
+  --trait-fort: #3a3833;
+  --carte: #1a1916;
+  --titre: "Bebas Neue", sans-serif;
+  --machine: "Special Elite", monospace;
+  --texte: "Courier Prime", monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; background: var(--encre); color: var(--papier); }
+
+body {
+  font-family: var(--texte);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root { min-height: 100dvh; }
+
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+
+.ecran {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+
+.pluie {
+  background-image: repeating-linear-gradient(100deg, rgba(237, 232, 221, 0.05) 0 1px, transparent 1px 9px);
+}
+
+/* Grain de vieux film, très léger, au-dessus de tout. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 0.6s steps(3) infinite;
+  z-index: 50;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-3%, 2%); }
+  66% { transform: translate(2%, -3%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ---------- Typographie ---------- */
+
+.titre { font-family: var(--titre); font-weight: 400; line-height: 0.88; letter-spacing: 0.5px; margin: 0; }
+.machine { font-family: var(--machine); letter-spacing: 1px; }
+.etiquette { font-family: var(--machine); font-size: 13px; letter-spacing: 1px; color: var(--gris); text-transform: uppercase; }
+.petit { font-size: 12px; color: var(--gris); }
+.rouge { color: var(--rouge); }
+
+/* ---------- Boutons ---------- */
+
+.bouton {
+  appearance: none;
+  border: 1px solid var(--papier);
+  border-radius: 0;
+  background: transparent;
+  padding: 12px;
+  min-height: 44px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.bouton:active { transform: scale(0.98); }
+.bouton:disabled { border-color: var(--trait-fort); color: var(--gris); cursor: default; transform: none; }
+.bouton.plein { background: var(--papier); color: var(--encre); font-weight: 700; }
+.bouton.discret { border-color: var(--trait-fort); color: var(--gris-clair); }
+
+.gros-bouton {
+  appearance: none;
+  border: none;
+  border-radius: 0;
+  font-family: var(--titre);
+  font-size: 26px;
+  letter-spacing: 1px;
+  padding: 14px 0 12px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+}
+.gros-bouton:active { transform: scale(0.99); }
+.gros-bouton.rouge-fond { background: var(--rouge); color: var(--encre); }
+.gros-bouton.papier-fond { background: var(--papier); color: var(--encre); }
+.gros-bouton.encre-fond { background: var(--encre); color: var(--papier); }
+.gros-bouton.contour { background: transparent; border: 2px solid currentColor; padding: 12px 0 10px; }
+.gros-bouton:disabled { opacity: 0.4; cursor: default; }
+
+.lien-retour {
+  font-family: var(--machine);
+  font-size: 13px;
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tampon {
+  font-family: var(--machine);
+  font-size: 12px;
+  border: 2px solid currentColor;
+  padding: 3px 8px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.erreur { border: 1px dashed var(--rouge); color: var(--rouge); padding: 10px 12px; font-size: 13px; }
+
+/* ---------- Navigation d'une partie ---------- */
+
+.nav-partie {
+  position: sticky;
+  bottom: 0;
+  margin: auto -16px calc(-24px - env(safe-area-inset-bottom));
+  padding: 0 16px env(safe-area-inset-bottom);
+  background: var(--encre);
+  border-top: 1px solid var(--trait);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--machine);
+  font-size: 13px;
+  z-index: 10;
+}
+.nav-partie a { text-decoration: none; padding: 14px 4px; color: var(--gris); }
+.nav-partie a.actif { color: var(--papier); }
+.nav-partie a.accuser { color: var(--rouge); }
+
+/* ---------- Silhouettes ---------- */
+
+.silhouette { position: relative; width: 100%; aspect-ratio: 3 / 4; background: #1e1d1a; overflow: hidden; display: block; }
+.silhouette > span { position: absolute; left: 50%; transform: translateX(-50%); display: block; }
+
+/* ---------- Mur d'indices ---------- */
+
+.mur { background: var(--carte); padding: 18px 12px 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; align-items: start; }
+.note-mur { background: var(--papier); color: var(--encre); padding: 8px 10px 10px; font-family: var(--machine); font-size: 13px; line-height: 1.3; }
+.note-mur .punaise { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--rouge); margin: -2px auto 6px; }
+.note-mur .source { display: block; margin-top: 6px; font-size: 10px; color: #55524c; letter-spacing: 0.5px; }
+
+/* ---------- Apparitions ---------- */
+
+.apparait { animation: apparait 0.45s ease-out both; }
+@keyframes apparait { from { opacity: 0; transform: translateY(8px); } }
+
+.epingle { animation: epingle 0.5s ease-out both; }
+@keyframes epingle { from { opacity: 0; transform: translateY(-14px) scale(1.06); } }
+
+.clignote { animation: clignote 1.2s steps(2) infinite; }
+@keyframes clignote { 50% { opacity: 0.25; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .grain::after, .apparait, .epingle, .clignote { animation: none; }
+}
+
+textarea, input {
+  font-family: var(--texte);
+  font-size: 16px;
+  color: var(--papier);
+  background: transparent;
+  border: 1px solid var(--trait-fort);
+  border-radius: 0;
+  padding: 12px;
+  width: 100%;
+}
+textarea:focus, input:focus { outline: 1px solid var(--papier); outline-offset: 0; }

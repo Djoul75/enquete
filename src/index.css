@@ -155,10 +155,12 @@ a { color: inherit; }
 .nav-partie a.actif { color: var(--papier); }
 .nav-partie a.accuser { color: var(--rouge); }
 
-/* ---------- Silhouettes ---------- */
+/* ---------- Lieux à fouiller ---------- */
 
-.silhouette { position: relative; width: 100%; aspect-ratio: 3 / 4; background: #1e1d1a; overflow: hidden; display: block; }
-.silhouette > span { position: absolute; left: 50%; transform: translateX(-50%); display: block; }
+.lieu { appearance: none; position: relative; border: 1px solid var(--trait-fort); border-radius: 0; background: var(--encre); padding: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
+.lieu:disabled { cursor: default; }
+.lieu:disabled:not(:has(.tampon)) { opacity: 0.5; }
+.tampon { position: absolute; top: 18%; left: 50%; transform: translateX(-50%) rotate(-8deg); border: 2px solid var(--rouge); color: var(--rouge); background: var(--encre); font-family: var(--machine); font-size: 14px; letter-spacing: 2px; padding: 2px 8px; }
 
 /* ---------- Mur d'indices ---------- */
 

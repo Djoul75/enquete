@@ -1,3 +1,5 @@
+import type { DecorId, Visage } from "./visuels";
+
 // Format d'une affaire. La partie « publique » est envoyée au navigateur dès
 // le début ; la partie « secrète » ne sort de la base que morceau par
 // morceau (réponse à une question posée, résultat d'une fouille) puis en
@@ -9,7 +11,8 @@ export type Suspect = {
   nom: string;
   role: string; // « chanteuse », « inspecteur »…
   portrait: string; // une phrase de présentation
-  silhouette: number; // 0 à 5, forme dessinée dans les écrans
+  silhouette: number; // 0 à 5, ancienne forme dessinée ; sert encore à deviner le visage
+  visage?: Omit<Visage, "ombre"> & { ombre?: Visage["ombre"] }; // voir lib/visuels.ts
 };
 
 export type Question = {
@@ -27,7 +30,7 @@ export type AffairePublic = {
   accroche: string; // la dernière phrase du récit, en rouge
   victime: string;
   suspects: Suspect[];
-  lieux: { id: string; nom: string }[];
+  lieux: { id: string; nom: string; decor?: DecorId }[]; // le premier lieu = la scène du crime
   questions: Question[];
   mobiles: { id: string; texte: string }[];
   journal: { nom: string; date: string; prix: string };

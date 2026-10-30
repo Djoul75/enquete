@@ -23,6 +23,8 @@ Ce qui fait une bonne affaire :
 - Intro : 2 à 3 phrases sèches. Accroche : une phrase courte et intrigante, la dernière image de la scène.
 - Ids courts en minuscules sans accents ni espaces (« ferrand », « ferrand-douille », « douille »).
 - silhouette : un entier de 0 à 5 par suspect (0 homme au feutre, 1 femme aux cheveux longs, 2 homme trapu, 3 femme au chapeau, 4 homme maigre au col relevé, 5 homme au béret). Varie-les.
+- visage : le portrait dessiné du suspect, façon affiche de film noir, assemblé à partir de pièces. Choisis-les pour que chaque suspect soit reconnaissable au premier coup d'œil et cohérent avec son rôle et son époque (un inspecteur au feutre et à l'imper, une veuve à voilette, un barman au gilet et nœud papillon…). Varie les chapeaux, coiffures et accessoires entre les suspects ; alterne le côté de l'ombre. rouge_levres seulement pour une femme ; barbe, moustache et monocle seulement pour un homme.
+- decor : l'illustration du lieu, à prendre dans la liste (bureau, quai, bar, loge, chambre, cabine de bateau, compartiment de train, couloir, scène de spectacle, terrasse, piscine, salle radio ou standard, écurie, atelier ou salle des machines, coffre ou caisse, phare, piece pour une pièce quelconque). Le premier lieu est celui où l'on a trouvé la victime : son décor sert d'image d'ouverture.
 - journal : un nom de journal inventé et plausible pour la ville, la date du lendemain du crime, un prix d'époque.
 - Pas de gore, pas de violence sexuelle. Le meurtre a déjà eu lieu ; on reste dans le registre du polar classique.
 

@@ -108,6 +108,8 @@ await capture("08-revelation", `#/p/${partie}`);
 // Partie solo en cours, puis attente après accusation.
 const solo = await rpc("enquete_nouvelle_partie", { p_mode: "solo" });
 await rpc("enquete_fouiller", { p_partie: solo, p_lieu: "couloir" });
+await capture("11-scene-sans-visuels-precises", `#/p/${solo}`);
+await capture("12-interrogatoire-sans-visuels-precises", `#/p/${solo}/suspect/odette`);
 await capture("09-dossiers-fin", "#/");
 const duel2 = await rpc("enquete_nouvelle_partie", { p_mode: "duel" });
 await rpc("enquete_fouiller", { p_partie: duel2, p_lieu: "plateau" });

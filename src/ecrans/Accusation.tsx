@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { EtatPartie } from "../lib/types";
 import type { Actions } from "./Partie";
-import { Silhouette } from "../composants/Silhouette";
+import { Visage } from "../composants/Visage";
+import { visageDe } from "../lib/visuels";
 import { indicesTrouves, nomCourt } from "../lib/partie";
 import { compteARebours, useMaintenant } from "../lib/routeur";
 
@@ -48,11 +49,9 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
                   fontWeight: choisi ? 700 : 400,
                 }}
               >
-                <Silhouette
-                  variante={s.silhouette}
-                  couleur={choisi ? "var(--encre)" : "#5a5852"}
-                  fond={choisi ? "var(--rouge)" : undefined}
-                />
+                <span style={{ width: "100%", outline: choisi ? "3px solid var(--rouge)" : "none", opacity: choisi ? 1 : 0.55 }}>
+                  <Visage v={visageDe(s)} />
+                </span>
                 {nomCourt(s.nom)}
               </button>
             );

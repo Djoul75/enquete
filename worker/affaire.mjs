@@ -81,6 +81,7 @@ export function aplatir(affaire) {
     lieux: pub.lieux.map((l) => ({
       id: l.id,
       nom: l.nom,
+      decor: l.decor,
       fouille: sec.fouilles[l.id].texte,
       indice: sec.fouilles[l.id].indice ?? null,
     })),
@@ -111,7 +112,7 @@ export function deplier(plat) {
       accroche: plat.accroche,
       victime: plat.victime,
       suspects: plat.suspects,
-      lieux: plat.lieux.map((l) => ({ id: l.id, nom: l.nom })),
+      lieux: plat.lieux.map((l) => sansNull({ id: l.id, nom: l.nom, decor: l.decor })),
       questions: plat.questions.map((q) => sansNull({ id: q.id, suspect: q.suspect, texte: q.texte, requiert: q.requiert })),
       mobiles: plat.mobiles,
       journal: plat.journal,
@@ -136,6 +137,26 @@ const objet = (props) => ({
   additionalProperties: false,
 });
 
+const parmi = (...valeurs) => ({ type: "string", enum: valeurs });
+
+// Pièces des visages et décors dessinés : mêmes listes que src/lib/visuels.ts.
+const VISAGE = objet({
+  femme: { type: "boolean" },
+  carrure: parmi("fine", "moyenne", "forte"),
+  age: parmi("jeune", "mur", "vieux"),
+  coiffure: parmi("longs", "carre", "chignon", "courts", "degarni", "rase"),
+  chapeau: parmi("aucun", "feutre", "cloche", "beret", "casquette", "melon"),
+  pilosite: parmi("aucune", "moustache", "barbe", "favoris"),
+  tenue: parmi("costume", "imper", "robe", "gilet", "uniforme", "col-roule"),
+  accessoire: parmi("aucun", "cigarette", "lunettes", "monocle", "perles", "voilette", "noeud", "foulard"),
+  rouge_levres: { type: "boolean" },
+  ombre: parmi("gauche", "droite"),
+});
+const DECOR = parmi(
+  "bureau", "quai", "bar", "loge", "chambre", "cabine", "compartiment", "couloir", "scene",
+  "terrasse", "piscine", "radio", "ecurie", "atelier", "coffre", "phare", "piece",
+);
+
 // Schéma JSON du format plat, imposé à Claude via les structured outputs.
 export const SCHEMA_PLAT = objet({
   titre: texte,
@@ -145,9 +166,9 @@ export const SCHEMA_PLAT = objet({
   victime: texte,
   suspects: {
     type: "array",
-    items: objet({ id: texte, nom: texte, role: texte, portrait: texte, silhouette: { type: "integer" } }),
+    items: objet({ id: texte, nom: texte, role: texte, portrait: texte, silhouette: { type: "integer" }, visage: VISAGE }),
   },
-  lieux: { type: "array", items: objet({ id: texte, nom: texte, fouille: texte, indice: texteOuNull }) },
+  lieux: { type: "array", items: objet({ id: texte, nom: texte, decor: DECOR, fouille: texte, indice: texteOuNull }) },
   indices: { type: "array", items: objet({ id: texte, texte }) },
   questions: {
     type: "array",

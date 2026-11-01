@@ -5,6 +5,10 @@ import { aller, heuresRestantes, useMaintenant } from "../lib/routeur";
 import { activerNotifications, etatNotifications } from "../lib/push";
 import type { Accueil, ResumePartie } from "../lib/types";
 
+// Limites fixées dans la base (enquete_etat) ; l'accueil ne les renvoie pas.
+const QUESTIONS = 15;
+const FOUILLES = 3;
+
 export function Dossiers() {
   const [accueil, setAccueil] = useState<Accueil | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -19,7 +23,12 @@ export function Dossiers() {
   useEffect(() => {
     charger();
     const id = window.setInterval(charger, 30_000);
-    return () => window.clearInterval(id);
+    const auRetour = () => document.visibilityState === "visible" && charger();
+    document.addEventListener("visibilitychange", auRetour);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", auRetour);
+    };
   }, [charger]);
 
   async function ouvrir(mode: "solo" | "duel") {
@@ -61,24 +70,32 @@ export function Dossiers() {
 
   return (
     <main className="ecran pluie">
-      <div className="machine" style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--gris)" }}>
+      <div className="machine" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--gris-clair)" }}>
         <span>BRIGADE CRIMINELLE</span>
-        <span>
-          {resolues} RÉSOLUE{resolues > 1 ? "S" : ""} · {archives.length - resolues} CLASSÉE{archives.length - resolues > 1 ? "S" : ""}
+        <span style={{ display: "flex", gap: 6 }}>
+          <span className="compteur-archive">{resolues} RÉSOLUE{resolues > 1 ? "S" : ""}</span>
+          <span className="compteur-archive" style={{ color: "var(--gris)" }}>
+            {archives.length - resolues} CLASSÉE{archives.length - resolues > 1 ? "S" : ""}
+          </span>
         </span>
       </div>
 
-      <h1 className="titre" style={{ fontSize: 96 }}>
-        ENQUÊ<span className="rouge">T</span>E
+      <h1 className="titre" style={{ fontSize: 88 }}>
+        ENQUÊ<span className="rouge neon">T</span>E
       </h1>
 
-      {enCours.map((p) => (
-        <CarteEnCours key={p.id} partie={p} maintenant={maintenant} />
-      ))}
+      {enCours.length > 0 && (
+        <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <span className="etiquette">En cours</span>
+          {enCours.map((p, i) => (
+            <CarteEnCours key={p.id} partie={p} maintenant={maintenant} rang={i} />
+          ))}
+        </section>
+      )}
 
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <span className="etiquette">Ouvrir un dossier</span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        <div className="grille-2" style={{ gap: 10 }}>
           <BoutonMode
             titre="SEUL"
             texte="Toi, la ville, et un menteur."
@@ -88,7 +105,7 @@ export function Dossiers() {
           />
           <BoutonMode
             titre="EN DUEL"
-            texte={`Même affaire que ${adversaire}. Chacun pour soi.`}
+            texte={`Contre ${adversaire}. Chacun pour soi.`}
             reste={accueil.restantes_duel}
             disabled={occupe || accueil.restantes_duel === 0}
             onClick={() => ouvrir("duel")}
@@ -102,7 +119,7 @@ export function Dossiers() {
             </p>
           ) : (
             <button className="bouton" onClick={demander} disabled={occupe}>
-              Plus de dossier en attente. <span className="rouge">Faire écrire une nouvelle affaire →</span>
+              Plus de dossier en attente. <span className="rouge-texte">Faire écrire une nouvelle affaire →</span>
             </button>
           ))}
       </section>
@@ -112,64 +129,53 @@ export function Dossiers() {
       {archives.length > 0 && (
         <section>
           <span className="etiquette" style={{ display: "block", marginBottom: 6 }}>Archives</span>
-          {archives.map((p, i) => (
-            <a
-              key={p.id}
-              href={`#/p/${p.id}`}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 0",
-                textDecoration: "none",
-                borderTop: "1px solid var(--trait)",
-                borderBottom: i === archives.length - 1 ? "1px solid var(--trait)" : undefined,
-              }}
-            >
-              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <span className="titre" style={{ fontSize: 24, lineHeight: 1 }}>{p.titre.toUpperCase()}</span>
-                <span className="petit">{sousTitreArchive(p)}</span>
-              </span>
-              {(p.score ?? 0) >= 50 ? (
-                <span className="tampon">RÉSOLUE</span>
-              ) : (
-                <span className="tampon rouge">CLASSÉE</span>
-              )}
-            </a>
-          ))}
+          {archives.map((p, i) => {
+            const resolue = (p.score ?? 0) >= 50;
+            return (
+              <a key={p.id} href={`#/p/${p.id}`} className="ligne-archive" style={{ borderBottom: i === archives.length - 1 ? "1px solid var(--trait)" : undefined }}>
+                <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                  <span className="titre" style={{ fontSize: 23, lineHeight: 1 }}>{p.titre.toUpperCase()}</span>
+                  <span className="petit" style={{ color: "var(--gris-clair)" }}>{sousTitreArchive(p)}</span>
+                </span>
+                <span className={`tampon${resolue ? "" : " rouge-texte"}`} style={{ transform: `rotate(${i % 2 ? 3 : -4}deg)` }}>
+                  {resolue ? "RÉSOLUE" : "CLASSÉE"}
+                </span>
+              </a>
+            );
+          })}
         </section>
       )}
 
-      <footer style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", gap: 12 }} className="petit">
+      <footer style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }} className="petit">
+        <a href="#/regles" className="lien-retour" style={{ fontSize: 12, color: "var(--papier)", textDecoration: "underline" }}>Comment on joue ?</a>
         {notifs === "active" ? (
-          <span>Notifications activées</span>
+          <span style={{ color: "var(--gris-clair)" }}>Notifications ✓</span>
         ) : notifs === "indisponible" ? (
-          <span>Ajoute le site à l'écran d'accueil pour les notifications</span>
+          <span style={{ color: "var(--gris-clair)", textAlign: "center" }}>Ajoute à l'écran d'accueil pour les notifications</span>
         ) : (
-          <button
-            className="lien-retour"
-            style={{ fontSize: 12, color: "var(--gris-clair)", textDecoration: "underline" }}
-            onClick={async () => setNotifs(await activerNotifications())}
-          >
-            Activer les notifications
+          <button className="lien-retour" style={{ fontSize: 12, color: "var(--gris-clair)", textDecoration: "underline" }} onClick={async () => setNotifs(await activerNotifications())}>
+            Notifications
           </button>
         )}
         <button className="lien-retour" style={{ fontSize: 12, color: "var(--gris)" }} onClick={() => supabase.auth.signOut()}>
-          Quitter le service
+          Quitter
         </button>
       </footer>
     </main>
   );
 }
 
-function sousTitreArchive(p: ResumePartie): string {
-  if (p.mode === "solo") return `Seul · ${p.questions} questions · ${p.score ?? 0} pts`;
-  const autre = p.autres?.[0];
-  return `Duel · toi ${p.score ?? 0}, ${autre?.nom ?? "?"} ${autre?.score ?? 0}`;
+function dateCourte(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-function CarteEnCours({ partie, maintenant }: { partie: ResumePartie; maintenant: number }) {
+function sousTitreArchive(p: ResumePartie): string {
+  if (p.mode === "solo") return `${dateCourte(p.created_at)} · Seul · ${p.score ?? 0} pts`;
+  const autre = p.autres?.[0];
+  return `${dateCourte(p.created_at)} · Duel · toi ${p.score ?? 0}, ${autre?.nom ?? "?"} ${autre?.score ?? 0}`;
+}
+
+function CarteEnCours({ partie, maintenant, rang }: { partie: ResumePartie; maintenant: number; rang: number }) {
   const autre = partie.autres?.[0];
   let bandeau: string | null = null;
   if (partie.mode === "duel") {
@@ -178,42 +184,55 @@ function CarteEnCours({ partie, maintenant }: { partie: ResumePartie; maintenant
         ? `Accusation signée. ${autre?.nom} a encore ${heuresRestantes(partie.echeance, maintenant)}.`
         : `Accusation signée. En attente de ${autre?.nom}.`;
     } else if (autre?.a_accuse && partie.echeance) {
-      bandeau = `${autre.nom} a accusé. Il te reste ${heuresRestantes(partie.echeance, maintenant)}.`;
+      bandeau = `${autre.nom} a accusé · il te reste ${heuresRestantes(partie.echeance, maintenant)}`;
     }
   }
   return (
-    <a
-      href={`#/p/${partie.id}`}
-      className="apparait"
-      style={{
-        textDecoration: "none",
-        background: "var(--papier)",
-        color: "var(--encre)",
-        padding: "18px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        position: "relative",
-      }}
-    >
-      <span className="tampon rouge" style={{ position: "absolute", right: 14, top: 14, transform: "rotate(6deg)" }}>
-        {partie.mode === "duel" ? "DUEL" : "EN COURS"}
+    <a href={`#/p/${partie.id}`} className="carte-en-cours apparait" style={{ animationDelay: `${rang * 60}ms` }}>
+      <span className="tampon rouge-sombre" style={{ position: "absolute", right: 14, top: 14, transform: "rotate(6deg)" }}>
+        {partie.mode === "duel" ? "DUEL" : "SEUL"}
       </span>
       <span className="machine" style={{ fontSize: 12 }}>
         {partie.cadre.ville.toUpperCase()}, {partie.cadre.annee}
       </span>
-      <span className="titre" style={{ fontSize: 44, maxWidth: "85%" }}>{partie.titre.toUpperCase()}</span>
-      <span style={{ fontSize: 14 }}>
-        Ton enquête : {partie.questions} question{partie.questions > 1 ? "s" : ""} posée{partie.questions > 1 ? "s" : ""},{" "}
-        {partie.fouilles} fouille{partie.fouilles > 1 ? "s" : ""}.
-      </span>
-      {bandeau && (
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, background: "var(--encre)", color: "var(--papier)", padding: "8px 10px" }}>
-          <span className="clignote" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--rouge)", flexShrink: 0 }} />
-          {bandeau}
+      <span className="titre" style={{ fontSize: 38, maxWidth: "80%" }}>{partie.titre.toUpperCase()}</span>
+      {!partie.a_accuse && (
+        <span className="jauges">
+          <Jauge nom={`QUESTIONS ${partie.questions}/${QUESTIONS}`} part={partie.questions / QUESTIONS} />
+          <Jauge nom={`FOUILLES ${partie.fouilles}/${FOUILLES}`} part={partie.fouilles / FOUILLES} />
+          {partie.indices !== undefined && (
+            <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span className="machine" style={{ fontSize: 11 }}>{partie.indices} INDICE{partie.indices > 1 ? "S" : ""}</span>
+              <span style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                {Array.from({ length: Math.min(partie.indices, 12) }, (_, i) => (
+                  <span key={i} style={{ width: 7, height: 4, background: "var(--rouge)" }} />
+                ))}
+              </span>
+            </span>
+          )}
         </span>
       )}
+      {bandeau && (
+        <span className="machine bandeau-carte">
+          <span className="clignote" style={{ color: "var(--rouge-texte)" }}>●</span>
+          {bandeau.toUpperCase()}
+        </span>
+      )}
+      <span className="titre" style={{ fontSize: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {partie.a_accuse ? "VOIR LE DOSSIER" : "REPRENDRE L'ENQUÊTE"} <span className="rouge" style={{ fontSize: 26 }}>→</span>
+      </span>
     </a>
+  );
+}
+
+function Jauge({ nom, part }: { nom: string; part: number }) {
+  return (
+    <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span className="machine" style={{ fontSize: 11 }}>{nom}</span>
+      <span style={{ display: "block", height: 4, background: "#c9c3b6" }}>
+        <span className="jauge" style={{ display: "block", height: 4, width: `${Math.min(100, part * 100)}%`, background: "var(--encre)" }} />
+      </span>
+    </span>
   );
 }
 
@@ -234,14 +253,13 @@ function BoutonMode(props: {
         borderColor: props.disabled ? undefined : props.rouge ? "var(--rouge)" : "var(--trait-fort)",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
-        minHeight: 120,
-        padding: 14,
+        gap: 4,
+        padding: 12,
       }}
     >
-      <span className="titre" style={{ fontSize: 32, lineHeight: 1 }}>{props.titre}</span>
-      <span style={{ fontSize: 13, color: "var(--gris-clair)", lineHeight: 1.35 }}>{props.texte}</span>
-      <span className="petit" style={{ marginTop: "auto" }}>
+      <span className="titre" style={{ fontSize: 30, lineHeight: 1 }}>{props.titre}</span>
+      <span style={{ fontSize: 12, color: "var(--gris-clair)", lineHeight: 1.35 }}>{props.texte}</span>
+      <span className="petit" style={{ marginTop: 4, color: "var(--gris-clair)" }}>
         {props.reste === 0 ? "Aucun dossier" : `${props.reste} dossier${props.reste > 1 ? "s" : ""} en attente`}
       </span>
     </button>

@@ -23,6 +23,7 @@ await db.exec(`
   insert into profiles values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');
 `);
 await db.exec(readFileSync(new URL("../supabase/migrations/0001_enquete.sql", import.meta.url), "utf8"));
+await db.exec(readFileSync(new URL("../supabase/migrations/0002_revelation_indices.sql", import.meta.url), "utf8"));
 await db.exec(`insert into enquete_joueurs values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');`);
 for (const f of ["01-vieux-port", "02-train-bleu", "03-derniere-prise"]) {
   const a = charger(new URL(`../affaires/${f}.json`, import.meta.url));
@@ -71,7 +72,7 @@ async function capture(nom, hash, pleinePage = true) {
   // Changer seulement le « # » ne recharge pas la page : on force.
   await page.goto(SITE + hash);
   await page.reload();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1600);
   await page.screenshot({ path: `${SORTIE}/${nom}.png`, fullPage: pleinePage });
   console.log("capturé", nom);
 }
@@ -98,19 +99,32 @@ await capture("02-dossiers", "#/");
 await capture("03-telegramme", `#/p/${partie}`, false);
 await page.evaluate((id) => localStorage.setItem(`enquete-telegramme-${id}`, "1"), partie);
 await capture("04-scene", `#/p/${partie}`);
-await capture("05-interrogatoire", `#/p/${partie}/suspect/ferrand`);
-await capture("06-mur", `#/p/${partie}/mur`);
-await capture("07-accusation", `#/p/${partie}/accuser`);
+await capture("04b-scene-ecran", `#/p/${partie}`, false);
+await capture("05-lieu-fouille", `#/p/${partie}/lieu/quai`, false);
+await capture("05b-lieu-a-fouiller", `#/p/${partie}/lieu/loge`, false);
+await capture("06-interrogatoire", `#/p/${partie}/suspect/ferrand`, false);
+await capture("07-mur", `#/p/${partie}/mur`, false);
+await capture("07b-carnet", `#/p/${partie}/carnet`, false);
+await capture("08-accusation-qui", `#/p/${partie}/accuser`, false);
+const choix = (etape) => page.evaluate(([id, etape]) => sessionStorage.setItem(`enquete-accuser-${id}`, JSON.stringify({ etape, suspect: "ferrand", mobile: "silence", preuve: "pistolet" })), [partie, etape]);
+await choix(1);
+await capture("08b-accusation-pourquoi", `#/p/${partie}/accuser`, false);
+await choix(2);
+await capture("08c-accusation-preuve", `#/p/${partie}/accuser`, false);
+await choix(3);
+await capture("08d-accusation-signer", `#/p/${partie}/accuser`, false);
+await capture("00-regles", "#/regles");
 
 await rpc("enquete_accuser", { p_partie: partie, p_suspect: "ferrand", p_mobile: "silence", p_preuve: "pistolet" });
-await capture("08-revelation", `#/p/${partie}`);
+await capture("09-revelation", `#/p/${partie}`);
 
 // Partie solo en cours, puis attente après accusation.
 const solo = await rpc("enquete_nouvelle_partie", { p_mode: "solo" });
 await rpc("enquete_fouiller", { p_partie: solo, p_lieu: "couloir" });
-await capture("11-scene-sans-visuels-precises", `#/p/${solo}`);
-await capture("12-interrogatoire-sans-visuels-precises", `#/p/${solo}/suspect/odette`);
-await capture("09-dossiers-fin", "#/");
+await capture("11-scene-solo", `#/p/${solo}`, false);
+await capture("06b-interrogatoire-vide", `#/p/${solo}/suspect/odette`, false);
+await capture("05c-lieu-solo", `#/p/${solo}/lieu/couloir`, false);
+await capture("12-dossiers-fin", "#/");
 const duel2 = await rpc("enquete_nouvelle_partie", { p_mode: "duel" });
 await rpc("enquete_fouiller", { p_partie: duel2, p_lieu: "plateau" });
 await rpc("enquete_accuser", { p_partie: duel2, p_suspect: "lucie", p_mobile: "vol", p_preuve: "page" });

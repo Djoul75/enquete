@@ -5,6 +5,7 @@ import { useRoute } from "./lib/routeur";
 import { Connexion } from "./ecrans/Connexion";
 import { Dossiers } from "./ecrans/Dossiers";
 import { Partie } from "./ecrans/Partie";
+import { Regles } from "./ecrans/Regles";
 
 export function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -18,6 +19,7 @@ export function App() {
 
   if (session === undefined) return null;
   if (!session) return <Connexion />;
+  if (route.ecran === "regles") return <Regles />;
   if (route.ecran === "partie") return <Partie key={route.partie} route={route} />;
   return <Dossiers />;
 }

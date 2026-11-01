@@ -86,6 +86,7 @@ export type EtatPartie = {
       preuve: string | null;
       score: number;
       questions: number;
+      indices?: string[]; // migration 0002
     }[];
   } | null;
   limites: { questions: number; fouilles: number };
@@ -103,6 +104,7 @@ export type ResumePartie = {
   score: number | null;
   questions: number;
   fouilles: number;
+  indices?: number; // migration 0002
   autres: { nom: string; a_accuse: boolean; score: number | null }[] | null;
 };
 

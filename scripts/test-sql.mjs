@@ -17,6 +17,7 @@ await db.exec(`
   insert into profiles values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');
 `);
 await db.exec(readFileSync(new URL("../supabase/migrations/0001_enquete.sql", import.meta.url), "utf8"));
+await db.exec(readFileSync(new URL("../supabase/migrations/0002_revelation_indices.sql", import.meta.url), "utf8"));
 await db.exec(`insert into enquete_joueurs values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');`);
 
 const fichier = process.argv[2] ?? new URL("../affaires/01-vieux-port.json", import.meta.url);

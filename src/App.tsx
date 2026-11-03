@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import { api } from "./lib/api";
@@ -9,7 +9,8 @@ import { Dossiers } from "./ecrans/Dossiers";
 import { Associes } from "./ecrans/Associes";
 import { Archives } from "./ecrans/Archives";
 import { Compte } from "./ecrans/Compte";
-import { installationAMontrer } from "./lib/installation";
+import { installationAMontrer, installee } from "./lib/installation";
+import { Demarrage, demarrageAMontrer } from "./composants/Demarrage";
 import { HorsLigne } from "./composants/HorsLigne";
 
 // Les écrans lourds (partie, dessins des suspects et des lieux) arrivent en
@@ -91,9 +92,12 @@ function Ecran() {
 }
 
 export function App() {
+  const [enseigne, setEnseigne] = useState(() => demarrageAMontrer(installee()));
+  const finEnseigne = useCallback(() => setEnseigne(false), []);
   useEffect(precharger, []);
   return (
     <>
+      {enseigne && <Demarrage onFini={finEnseigne} />}
       <HorsLigne />
       <Suspense fallback={null}>
         <Ecran />

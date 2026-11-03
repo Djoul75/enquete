@@ -185,6 +185,12 @@ const preuveMarco = (await rpc("enquete_etat", { p_partie: partie })).journal.fi
 if (preuveMarco) await rpc("enquete_accuser", { p_partie: partie, p_suspect: secret.solution.coupable, p_mobile: pub.mobiles[1].id, p_preuve: preuveMarco });
 uid = JULES;
 await capture("e1-revelation", `#/p/${partie}`);
+await page.click("text=PARTAGER MA UNE");
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${SORTIE}/e3-partage.png` });
+await page.goto(SITE + "?demarrage#/");
+await page.waitForTimeout(450);
+await page.screenshot({ path: `${SORTIE}/f1-demarrage.png` });
 await capture("e2-archives", "#/archives");
 
 await navigateur.close();

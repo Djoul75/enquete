@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EtatPartie } from "../lib/types";
 import { indicesTrouves } from "../lib/partie";
 import { api } from "../lib/api";
 import { aller } from "../lib/routeur";
 import { mouvementReduit } from "../lib/effets";
+import { PartageUne } from "../composants/PartageUne";
+import type { DonneesCarte } from "../lib/carte";
 
 export function Revelation({ etat }: { etat: EtatPartie }) {
   const pub = etat.affaire.public;
@@ -15,6 +17,26 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
   const dernier = mots.pop();
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [partage, setPartage] = useState(false);
+  const moi = r.joueurs.find((j) => j.moi);
+  const carte = useMemo<DonneesCarte | null>(() => {
+    if (!moi) return null;
+    return {
+      partie: etat.partie.id,
+      titre: etat.affaire.titre,
+      ville: pub.cadre?.ville,
+      annee: pub.cadre?.annee,
+      pseudo: moi.nom,
+      score: moi.score,
+      rang: 1 + r.joueurs.filter((j) => j.score > moi.score).length,
+      joueurs: r.joueurs.length,
+      coupable: moi.suspect ? moi.suspect === sol.coupable : null,
+      mobile: moi.mobile === sol.mobile,
+      preuve: !!moi.preuve && sol.preuves.includes(moi.preuve),
+      questions: moi.questions,
+      maxQuestions: etat.limites.questions,
+    };
+  }, [moi, etat, pub, r, sol]);
   // Le journal arrive en tournoyant, comme dans les vieux films, la première fois.
   const cle = `enquete-revele-${etat.partie.id}`;
   const [tourne] = useState(() => !localStorage.getItem(cle) && !mouvementReduit());
@@ -111,6 +133,12 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
         {erreur && <p className="erreur">{erreur}</p>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
+          {carte && (
+            <button className="gros-bouton rouge-fond" onClick={() => setPartage(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              PARTAGER MA UNE
+              <span style={{ fontFamily: "var(--texte)", fontSize: 12, letterSpacing: 0 }}>ton score en image, sans dévoiler le coupable</span>
+            </button>
+          )}
           <a href={`#/p/${etat.partie.id}/carnet`} className="gros-bouton contour" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
             REVOIR L'ENQUÊTE
             <span style={{ fontFamily: "var(--texte)", fontSize: 12, letterSpacing: 0, color: "#55524c" }}>tes notes et réponses, avec la solution en tête</span>
@@ -120,6 +148,7 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
           </button>
         </div>
       </div>
+      {partage && carte && <PartageUne donnees={carte} onFermer={() => setPartage(false)} />}
     </main>
   );
 }

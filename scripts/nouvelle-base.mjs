@@ -36,7 +36,9 @@ const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 // 1. Le projet ------------------------------------------------------------
 let ref = process.env.ENQUETE_REF;
 if (!ref) {
-  const [orga] = await api("/organizations");
+  // Selon le jeton, la liste des organisations peut revenir vide : on prend
+  // alors celle du projet de la plateforme.
+  const orga = (await api("/organizations"))[0] ?? { id: (await api("/projects"))[0].organization_id, name: "de la plateforme" };
   const motDePasse = randomBytes(24).toString("base64url");
   const projet = await api("/projects", {
     method: "POST",

@@ -27,4 +27,3 @@ dist-ssr
 # elles vivent sur le VPS et dans Supabase.
 affaires/
 .env
-.ancien-worker/

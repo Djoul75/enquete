@@ -20,17 +20,19 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
   const [tourne] = useState(() => !localStorage.getItem(cle) && !mouvementReduit());
   useEffect(() => localStorage.setItem(cle, "1"), [cle]);
 
-  // Colonnes du tableau des preuves : moi toujours, les autres si la base
-  // donne leurs indices (migration 0002).
+  // Colonnes du tableau des preuves : moi d'abord, puis les autres.
   const colonnes = r.joueurs
-    .filter((j) => j.moi || j.indices)
+    .slice()
     .sort((a, b) => Number(b.moi) - Number(a.moi))
-    .map((j) => ({ nom: j.moi ? "TOI" : j.nom.split(" ")[0].toUpperCase(), trouves: j.moi ? mesIndices : new Set(j.indices) }));
+    .map((j) => ({ nom: j.moi ? "TOI" : j.nom.toUpperCase(), trouves: j.moi ? mesIndices : new Set(j.indices) }));
+  // À six, les colonnes se serrent pour laisser de la place à l'indice.
+  const largeur = colonnes.length > 3 ? 40 : 64;
 
   async function revanche() {
     setOccupe(true);
     try {
-      aller(`/p/${await api.nouvellePartie(etat.partie.mode)}`);
+      if (etat.partie.mode === "groupe") aller(`/bureau/${await api.revanche(etat.partie.id)}`);
+      else aller(`/p/${await api.nouvellePartieSolo()}`);
     } catch (e) {
       setErreur((e as Error).message);
       setOccupe(false);
@@ -85,14 +87,14 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--encre)", paddingTop: 10 }}>
-          <div className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, 64px)`, paddingTop: 0 }}>
+          <div className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, ${largeur}px)`, paddingTop: 0 }}>
             <span className="machine" style={{ fontSize: 12 }}>LES PREUVES</span>
             {colonnes.map((c) => (
               <span key={c.nom} className="machine" style={{ fontSize: 10, textAlign: "center", overflowWrap: "anywhere" }}>{c.nom}</span>
             ))}
           </div>
           {sol.preuves.map((id) => (
-            <div key={id} className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, 64px)` }}>
+            <div key={id} className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, ${largeur}px)` }}>
               <span>{r.indices[id]?.texte}</span>
               {colonnes.map((c) => (
                 <span key={c.nom} style={{ textAlign: "center", fontWeight: 700, color: c.trouves.has(id) ? undefined : "var(--rouge-sombre)" }}>
@@ -114,7 +116,7 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
             <span style={{ fontFamily: "var(--texte)", fontSize: 12, letterSpacing: 0, color: "#55524c" }}>tes notes et réponses, avec la solution en tête</span>
           </a>
           <button className="gros-bouton encre-fond" onClick={revanche} disabled={occupe}>
-            {occupe ? "…" : etat.partie.mode === "duel" ? "REVANCHE : NOUVEAU DUEL →" : "AFFAIRE SUIVANTE →"}
+            {occupe ? "…" : etat.partie.mode === "groupe" ? "REVANCHE AVEC LES MÊMES →" : "AFFAIRE SUIVANTE →"}
           </button>
         </div>
       </div>

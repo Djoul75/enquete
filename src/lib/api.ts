@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Accueil, EtatPartie } from "./types";
+import type { Accueil, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
 
 async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
@@ -8,9 +8,26 @@ async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  moi: () => rpc<Moi>("enquete_moi"),
+  pseudoLibre: (pseudo: string) => rpc<boolean>("enquete_pseudo_libre", { p_pseudo: pseudo }),
+  choisirPseudo: (pseudo: string) => rpc<void>("enquete_choisir_pseudo", { p_pseudo: pseudo }),
+
+  associes: () => rpc<Associes>("enquete_associes"),
+  ajouterAssocie: (pseudo: string) => rpc<"demande" | "associes" | "deja">("enquete_ajouter_associe", { p_pseudo: pseudo }),
+  repondreAssocie: (pseudo: string, oui: boolean) => rpc<void>("enquete_repondre_associe", { p_pseudo: pseudo, p_oui: oui }),
+  retirerAssocie: (pseudo: string) => rpc<void>("enquete_retirer_associe", { p_pseudo: pseudo }),
+
+  dossiersPossibles: (pseudos: string[]) => rpc<DossierPossible[]>("enquete_dossiers_possibles", { p_pseudos: pseudos }),
+  preparer: (pseudos: string[], affaire: number | null) => rpc<number>("enquete_preparer", { p_pseudos: pseudos, p_affaire: affaire }),
+  revanche: (partie: number) => rpc<number>("enquete_revanche", { p_partie: partie }),
+  bureau: (partie: number) => rpc<Bureau>("enquete_bureau", { p_partie: partie }),
+  appeler: (partie: number, pseudo: string) => rpc<void>("enquete_appeler", { p_partie: partie, p_pseudo: pseudo }),
+  quitterBureau: (partie: number) => rpc<void>("enquete_quitter_bureau", { p_partie: partie }),
+  ouvrirDossier: (partie: number) => rpc<number>("enquete_ouvrir_dossier", { p_partie: partie }),
+
   accueil: () => rpc<Accueil>("enquete_accueil"),
   etat: (partie: number) => rpc<EtatPartie>("enquete_etat", { p_partie: partie }),
-  nouvellePartie: (mode: "solo" | "duel") => rpc<number>("enquete_nouvelle_partie", { p_mode: mode }),
+  nouvellePartieSolo: () => rpc<number>("enquete_nouvelle_partie", { p_mode: "solo" }),
   poserQuestion: (partie: number, question: string) =>
     rpc<EtatPartie>("enquete_poser_question", { p_partie: partie, p_question: question }),
   fouiller: (partie: number, lieu: string) => rpc<EtatPartie>("enquete_fouiller", { p_partie: partie, p_lieu: lieu }),

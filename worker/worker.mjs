@@ -5,18 +5,20 @@
 //   node worker/worker.mjs importer affaires/*.json
 //                                   range des affaires écrites à la main
 //
-// Les secrets (Supabase service_role, clé Anthropic, VAPID) sont lus dans le
-// .env.local de la plateforme : une seule clé Anthropic à renouveler.
+// La base du jeu (adresse, clé service_role) est dans ~/enquete/.env. La clé
+// Anthropic et les clés VAPID restent dans le .env.local de la plateforme :
+// une seule clé Anthropic à renouveler.
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { charger, verifier } from "./affaire.mjs";
 import { ecrireAffaire } from "./ecrivain.mjs";
 
+config({ path: "/home/ubuntu/enquete/.env", quiet: true });
 config({ path: "/home/ubuntu/plateforme-perso/.env.local", quiet: true });
 
 const SITE = "https://djoul75.github.io/enquete/";
-const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+const db = createClient(process.env.ENQUETE_SUPABASE_URL, process.env.ENQUETE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 webpush.setVapidDetails("mailto:jules.gorce@gmail.com", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
@@ -53,16 +55,56 @@ async function notifier(userIds, titre, corps, chemin = "") {
 }
 
 async function nomsJoueurs() {
-  const joueurs = await verif(db.from("enquete_joueurs").select("user_id, nom"));
-  return Object.fromEntries(joueurs.map((j) => [j.user_id, j.nom]));
+  const joueurs = await verif(db.from("enquete_joueurs").select("user_id, pseudo"));
+  return Object.fromEntries(joueurs.map((j) => [j.user_id, j.pseudo]));
 }
 
-async function notificationsDuels() {
-  const noms = await nomsJoueurs();
+async function notificationsAssocies(noms) {
+  const demandes = await verif(db.from("enquete_amities").select("de, a").is("acceptee_at", null).eq("notifie", false));
+  for (const d of demandes) {
+    await notifier([d.a], `${noms[d.de]} veut s'associer avec toi`, "Accepte sa demande dans l'onglet Associés.", "/associes");
+    await db.from("enquete_amities").update({ notifie: true }).eq("de", d.de).eq("a", d.a);
+  }
+}
+
+// Rendez-vous au bureau : invitations, rendez-vous oubliés (48 h), ouverture.
+async function notificationsBureaux(noms) {
+  const bureaux = await verif(
+    db.from("enquete_parties").select("id, cree_par, created_at, enquete_participants(*)").is("lancee_at", null)
+  );
+  for (const b of bureaux) {
+    if (Date.now() - new Date(b.created_at).getTime() > 48 * 3_600_000) {
+      await verif(db.from("enquete_parties").delete().eq("id", b.id));
+      journal("rendez-vous expiré", b.id);
+      continue;
+    }
+    for (const invite of b.enquete_participants.filter((x) => x.statut === "invite" && !x.notifie_invitation)) {
+      await notifier([invite.user_id], `${noms[b.cree_par]} a une affaire pour toi`, "Rendez-vous à son bureau. L'enveloppe s'ouvre quand tout le monde est assis.", `/bureau/${b.id}`);
+      await db.from("enquete_participants").update({ notifie_invitation: true }).eq("partie_id", b.id).eq("user_id", invite.user_id);
+    }
+  }
+
+  const ouvertes = await verif(
+    db
+      .from("enquete_parties")
+      .select("id, cree_par, enquete_affaires(titre), enquete_participants(user_id)")
+      .eq("mode", "groupe")
+      .not("lancee_at", "is", null)
+      .eq("notifie_lancement", false)
+  );
+  for (const p of ouvertes) {
+    const autres = p.enquete_participants.map((x) => x.user_id).filter((id) => id !== p.cree_par);
+    await notifier(autres, "L'enveloppe est ouverte", `${noms[p.cree_par]} a ouvert le dossier : ${p.enquete_affaires.titre}.`, `/p/${p.id}`);
+    await db.from("enquete_parties").update({ notifie_lancement: true }).eq("id", p.id);
+  }
+}
+
+async function notificationsParties(noms) {
   const parties = await verif(
     db
       .from("enquete_parties")
       .select("id, mode, echeance, revelee_at, notifie_revelation, enquete_affaires(titre), enquete_participants(*)")
+      .not("lancee_at", "is", null)
       .or("revelee_at.is.null,notifie_revelation.eq.false")
   );
 
@@ -91,7 +133,7 @@ async function notificationsDuels() {
 
     for (const accusateur of participants.filter((x) => x.accuse_at && !x.notifie_accusation)) {
       const autres = participants.filter((x) => !x.accuse_at).map((x) => x.user_id);
-      await notifier(autres, `${noms[accusateur.user_id]} a désigné un coupable`, `${titre} : il te reste 24 h pour accuser à ton tour.`, `/p/${p.id}`);
+      await notifier(autres, `${noms[accusateur.user_id]} a désigné un coupable`, `${titre} : tu as jusqu'à demain pour accuser à ton tour.`, `/p/${p.id}`);
       await db.from("enquete_participants").update({ notifie_accusation: true }).eq("partie_id", p.id).eq("user_id", accusateur.user_id);
     }
 
@@ -157,6 +199,9 @@ if (mode === "hebdo") {
     journal("rangée", await ranger(affaire, "manuel"), affaire.titre);
   }
 } else {
-  await notificationsDuels();
+  const noms = await nomsJoueurs();
+  await notificationsAssocies(noms);
+  await notificationsBureaux(noms);
+  await notificationsParties(noms);
   await demandes();
 }

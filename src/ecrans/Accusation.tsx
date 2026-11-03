@@ -154,7 +154,7 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
           <div className={`proces-verbal${signe ? " signe" : ""}`}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, borderBottom: "3px double var(--encre)", paddingBottom: 8 }}>
               <span className="titre" style={{ fontSize: 26, letterSpacing: 2 }}>PROCÈS-VERBAL</span>
-              <span className="machine" style={{ fontSize: 10 }}>BRIGADE CRIMINELLE · {pub.cadre.ville.toUpperCase()} · {pub.journal.date.toUpperCase()}</span>
+              <span className="machine" style={{ fontSize: 10 }}>RAPPORT D'ENQUÊTE PRIVÉE · {pub.cadre.ville.toUpperCase()} · {pub.journal.date.toUpperCase()}</span>
             </div>
             <span className="machine" style={{ fontSize: 13 }}>Je soussigné accuse</span>
             <Ligne onModifier={() => aller(0)} signe={signe}>

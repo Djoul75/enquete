@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 // Routage par le « # » de l'URL : GitHub Pages ne sert qu'un index.html,
 // donc pas de chemins réels. Routes :
 //   #/                      dossiers
+//   #/associes | archives   les autres onglets de l'accueil
+//   #/preparer              préparer un rendez-vous à plusieurs
+//   #/bureau/12             le rendez-vous 12, avant l'ouverture du dossier
 //   #/regles                comment on joue
 //   #/p/12                  scène de crime de la partie 12
 //   #/p/12/suspect/ferrand  interrogatoire
@@ -11,6 +14,10 @@ import { useEffect, useState } from "react";
 export type VuePartie = "scene" | "mur" | "carnet" | "accuser" | "telegramme";
 export type Route =
   | { ecran: "dossiers" }
+  | { ecran: "associes" }
+  | { ecran: "archives" }
+  | { ecran: "preparer" }
+  | { ecran: "bureau"; partie: number }
   | { ecran: "regles" }
   | { ecran: "partie"; partie: number; vue: VuePartie }
   | { ecran: "partie"; partie: number; vue: "suspect"; suspect: string }
@@ -21,6 +28,10 @@ const VUES: string[] = ["mur", "carnet", "accuser", "telegramme"];
 function lire(): Route {
   const morceaux = window.location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (morceaux[0] === "regles") return { ecran: "regles" };
+  if (morceaux[0] === "associes") return { ecran: "associes" };
+  if (morceaux[0] === "archives") return { ecran: "archives" };
+  if (morceaux[0] === "preparer") return { ecran: "preparer" };
+  if (morceaux[0] === "bureau" && morceaux[1]) return { ecran: "bureau", partie: Number(morceaux[1]) };
   if (morceaux[0] === "p" && morceaux[1]) {
     const partie = Number(morceaux[1]);
     if (morceaux[2] === "suspect" && morceaux[3]) return { ecran: "partie", partie, vue: "suspect", suspect: morceaux[3] };

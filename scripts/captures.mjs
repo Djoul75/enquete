@@ -14,17 +14,22 @@ mkdirSync(SORTIE, { recursive: true });
 
 const JULES = "11111111-1111-1111-1111-111111111111";
 const JO = "22222222-2222-2222-2222-222222222222";
+const MARCO = "33333333-3333-3333-3333-333333333333";
+const LEA = "55555555-5555-5555-5555-555555555555";
+const NOUVEAU = "44444444-4444-4444-4444-444444444444";
 const db = new PGlite();
 await db.exec(`
-  create role anon; create role authenticated;
+  create role anon; create role authenticated; create role service_role;
   create schema auth;
+  create table auth.users (id uuid primary key);
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
-  create table profiles (id uuid primary key, full_name text);
-  insert into profiles values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');
+  insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${LEA}'), ('${NOUVEAU}');
 `);
-await db.exec(readFileSync(new URL("../supabase/migrations/0001_enquete.sql", import.meta.url), "utf8"));
-await db.exec(readFileSync(new URL("../supabase/migrations/0002_revelation_indices.sql", import.meta.url), "utf8"));
-await db.exec(`insert into enquete_joueurs values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');`);
+await db.exec(readFileSync(new URL("../supabase/migrations/0001_agence.sql", import.meta.url), "utf8"));
+await db.exec(`insert into enquete_joueurs (user_id, pseudo, admin) values
+  ('${JULES}', 'Jules', true), ('${JO}', 'Joséphine', false), ('${MARCO}', 'Marco', false), ('${LEA}', 'Léa', false);
+  insert into enquete_amities (de, a, acceptee_at) values
+  ('${JULES}', '${JO}', now()), ('${JULES}', '${MARCO}', now()), ('${JULES}', '${LEA}', now());`);
 for (const f of ["01-vieux-port", "02-train-bleu", "03-derniere-prise"]) {
   const a = charger(new URL(`../affaires/${f}.json`, import.meta.url));
   const { rows } = await db.query("insert into enquete_affaires (titre, public) values ($1, $2) returning id", [a.titre, a.public]);
@@ -42,20 +47,21 @@ async function rpc(fn, args) {
 
 const navigateur = await chromium.launch();
 const page = await navigateur.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-await page.addInitScript(() => {
+await page.addInitScript((id) => {
+  if (!id) return;
   const dans = Math.floor(Date.now() / 1000) + 3600;
   localStorage.setItem(
-    "enquete-auth",
+    "enquete-agence",
     JSON.stringify({
       access_token: "x.eyJzdWIiOiIxIn0.x",
       refresh_token: "x",
       token_type: "bearer",
       expires_in: 3600,
       expires_at: dans,
-      user: { id: "11111111-1111-1111-1111-111111111111", aud: "authenticated", email: "jules@example.com" },
+      user: { id, aud: "authenticated", email: "jules@example.com" },
     })
   );
-});
+}, JULES);
 await page.route("**/rest/v1/rpc/**", async (route) => {
   const fn = route.request().url().split("/rpc/")[1].split("?")[0];
   try {
@@ -77,57 +83,108 @@ async function capture(nom, hash, pleinePage = true) {
   console.log("capturé", nom);
 }
 
-// Une partie en duel bien avancée côté Jules.
-await capture("01-dossiers-vide", "#/");
+// Le parcours d'un nouveau venu : connexion, code, nom d'agence.
+const vierge = await navigateur.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await vierge.goto(SITE);
+await vierge.waitForTimeout(800);
+await vierge.screenshot({ path: `${SORTIE}/a1-connexion.png` });
+await vierge.fill("#email", "marco.p@gmail.com");
+await vierge.route("**/auth/v1/otp**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+await vierge.click("button.gros-bouton");
+await vierge.waitForTimeout(500);
+await vierge.keyboard.type("4170");
+await vierge.waitForTimeout(400);
+await vierge.screenshot({ path: `${SORTIE}/a2-code.png` });
+await vierge.close();
+
+uid = NOUVEAU;
+const nouveau = await navigateur.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await nouveau.addInitScript((id) => {
+  localStorage.setItem("enquete-agence", JSON.stringify({ access_token: "x.eyJzdWIiOiIxIn0.x", refresh_token: "x", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id, aud: "authenticated", email: "n@example.com" } }));
+}, NOUVEAU);
+await nouveau.route("**/rest/v1/rpc/**", async (route) => {
+  const fn = route.request().url().split("/rpc/")[1].split("?")[0];
+  try {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(await rpc(fn, JSON.parse(route.request().postData() || "{}"))) });
+  } catch (e) {
+    await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: e.message, code: "P0001" }) });
+  }
+});
+await nouveau.route("**/auth/v1/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+await nouveau.goto(SITE);
+await nouveau.waitForTimeout(800);
+await nouveau.fill("#pseudo", "Sam_K");
+await nouveau.waitForTimeout(900);
+await nouveau.screenshot({ path: `${SORTIE}/a3-pseudo.png` });
+await nouveau.close();
+await rpc("enquete_choisir_pseudo", { p_pseudo: "Sam_K" });
 uid = JULES;
-const partie = await rpc("enquete_nouvelle_partie", { p_mode: "duel" });
-for (const q of ["ferrand-soir", "sauveur-retour", "irene-soucis", "irene-coffre", "lola-soir"]) {
-  await rpc("enquete_poser_question", { p_partie: partie, p_question: q });
+
+// Jules a reçu une demande d'association de Sam_K.
+await db.exec(`insert into enquete_amities (de, a) values ('${NOUVEAU}', '${JULES}');`);
+await capture("b1-dossiers-vide", "#/");
+await capture("b2-associes", "#/associes");
+await capture("b3-preparer", "#/preparer", false);
+
+// Jules donne rendez-vous à Joséphine, Marco et Léa ; Joséphine s'assoit.
+const rdv = await rpc("enquete_preparer", { p_pseudos: ["Joséphine", "Marco", "Léa"], p_affaire: null });
+uid = JO;
+await rpc("enquete_bureau", { p_partie: rdv });
+uid = LEA;
+await rpc("enquete_quitter_bureau", { p_partie: rdv });
+uid = JULES;
+await capture("c1-bureau-hote", `#/bureau/${rdv}`, false);
+await capture("c2-dossiers-rdv", "#/");
+
+// Marco invite Jules à son tour : vue d'un invité.
+await db.exec(`insert into enquete_amities (de, a, acceptee_at) values ('${MARCO}', '${JO}', now()) on conflict do nothing`);
+uid = MARCO;
+const rdvMarco = await rpc("enquete_preparer", { p_pseudos: ["Jules", "Joséphine"], p_affaire: null });
+uid = JULES;
+await capture("c3-dossiers-invitation", "#/");
+await capture("c4-bureau-invite", `#/bureau/${rdvMarco}`, false);
+
+// Marco s'assoit au premier bureau, Jules ouvre l'enveloppe.
+uid = MARCO;
+await rpc("enquete_bureau", { p_partie: rdv });
+uid = JULES;
+await capture("c5-bureau-complet", `#/bureau/${rdv}`, false);
+await rpc("enquete_ouvrir_dossier", { p_partie: rdv });
+const partie = rdv;
+const affaireOuverte = (await rpc("enquete_etat", { p_partie: partie })).affaire;
+console.log("dossier tiré :", affaireOuverte.titre);
+const pub = affaireOuverte.public;
+const secret = (await db.query("select secret from enquete_affaires_secret where affaire_id = $1", [affaireOuverte.id])).rows[0].secret;
+
+for (const q of pub.questions.filter((q) => !q.requiert).slice(0, 5)) {
+  await rpc("enquete_poser_question", { p_partie: partie, p_question: q.id });
 }
-await rpc("enquete_fouiller", { p_partie: partie, p_lieu: "quai" });
-await rpc("enquete_fouiller", { p_partie: partie, p_lieu: "bureau" });
-await rpc("enquete_poser_question", { p_partie: partie, p_question: "ferrand-douille" });
-await rpc("enquete_sauver_notes", { p_partie: partie, p_notes: "Ferrand ment sur l'heure ? Sauveur l'a vu revenir. Qui a un 7.65…" });
+for (const l of pub.lieux.slice(0, 2)) await rpc("enquete_fouiller", { p_partie: partie, p_lieu: l.id });
 
 // Joséphine accuse la mauvaise personne.
 uid = JO;
-await rpc("enquete_poser_question", { p_partie: partie, p_question: "ferrand-qui" });
-await rpc("enquete_accuser", { p_partie: partie, p_suspect: "irene", p_mobile: "heritage", p_preuve: "bijoux" });
+await rpc("enquete_fouiller", { p_partie: partie, p_lieu: pub.lieux[0].id });
+const preuveJo = (await rpc("enquete_etat", { p_partie: partie })).journal.find((e) => e.indice)?.indice.id;
+const faux = pub.suspects.find((x) => x.id !== secret.solution.coupable).id;
+if (preuveJo) await rpc("enquete_accuser", { p_partie: partie, p_suspect: faux, p_mobile: pub.mobiles[0].id, p_preuve: preuveJo });
 uid = JULES;
 
-await capture("02-dossiers", "#/");
-await capture("03-telegramme", `#/p/${partie}`, false);
+await capture("d1-dossiers-en-cours", "#/");
+await capture("d2-telegramme", `#/p/${partie}`, false);
 await page.evaluate((id) => localStorage.setItem(`enquete-telegramme-${id}`, "1"), partie);
-await capture("04-scene", `#/p/${partie}`);
-await capture("04b-scene-ecran", `#/p/${partie}`, false);
-await capture("05-lieu-fouille", `#/p/${partie}/lieu/quai`, false);
-await capture("05b-lieu-a-fouiller", `#/p/${partie}/lieu/loge`, false);
-await capture("06-interrogatoire", `#/p/${partie}/suspect/ferrand`, false);
-await capture("07-mur", `#/p/${partie}/mur`, false);
-await capture("07b-carnet", `#/p/${partie}/carnet`, false);
-await capture("08-accusation-qui", `#/p/${partie}/accuser`, false);
-const choix = (etape) => page.evaluate(([id, etape]) => sessionStorage.setItem(`enquete-accuser-${id}`, JSON.stringify({ etape, suspect: "ferrand", mobile: "silence", preuve: "pistolet" })), [partie, etape]);
-await choix(1);
-await capture("08b-accusation-pourquoi", `#/p/${partie}/accuser`, false);
-await choix(2);
-await capture("08c-accusation-preuve", `#/p/${partie}/accuser`, false);
-await choix(3);
-await capture("08d-accusation-signer", `#/p/${partie}/accuser`, false);
+await capture("d3-scene", `#/p/${partie}`, false);
+await capture("d4-accusation", `#/p/${partie}/accuser`, false);
 await capture("00-regles", "#/regles");
 
-await rpc("enquete_accuser", { p_partie: partie, p_suspect: "ferrand", p_mobile: "silence", p_preuve: "pistolet" });
-await capture("09-revelation", `#/p/${partie}`);
-
-// Partie solo en cours, puis attente après accusation.
-const solo = await rpc("enquete_nouvelle_partie", { p_mode: "solo" });
-await rpc("enquete_fouiller", { p_partie: solo, p_lieu: "couloir" });
-await capture("11-scene-solo", `#/p/${solo}`, false);
-await capture("06b-interrogatoire-vide", `#/p/${solo}/suspect/odette`, false);
-await capture("05c-lieu-solo", `#/p/${solo}/lieu/couloir`, false);
-await capture("12-dossiers-fin", "#/");
-const duel2 = await rpc("enquete_nouvelle_partie", { p_mode: "duel" });
-await rpc("enquete_fouiller", { p_partie: duel2, p_lieu: "plateau" });
-await rpc("enquete_accuser", { p_partie: duel2, p_suspect: "lucie", p_mobile: "vol", p_preuve: "page" });
-await capture("10-attente", `#/p/${duel2}`, false);
+const etat = await rpc("enquete_etat", { p_partie: partie });
+const preuve = etat.journal.find((e) => e.indice)?.indice.id;
+await rpc("enquete_accuser", { p_partie: partie, p_suspect: secret.solution.coupable, p_mobile: secret.solution.mobile, p_preuve: preuve });
+uid = MARCO;
+await rpc("enquete_fouiller", { p_partie: partie, p_lieu: pub.lieux[1].id });
+const preuveMarco = (await rpc("enquete_etat", { p_partie: partie })).journal.find((e) => e.indice)?.indice.id;
+if (preuveMarco) await rpc("enquete_accuser", { p_partie: partie, p_suspect: secret.solution.coupable, p_mobile: pub.mobiles[1].id, p_preuve: preuveMarco });
+uid = JULES;
+await capture("e1-revelation", `#/p/${partie}`);
+await capture("e2-archives", "#/archives");
 
 await navigateur.close();

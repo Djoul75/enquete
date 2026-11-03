@@ -706,3 +706,100 @@ textarea, input {
   width: 100%;
 }
 textarea:focus, input:focus { outline: 1px solid var(--papier); outline-offset: 0; }
+
+/* ---------- Agence : connexion, porte, associés ---------- */
+
+.carte-papier { background: var(--papier); color: var(--encre); padding: 14px; position: relative; display: flex; flex-direction: column; gap: 6px; }
+
+/* Code à 6 chiffres : un seul vrai champ (pour le remplissage automatique
+   de l'iPhone), posé invisible sur six cases dessinées. */
+.code-cases { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.code-cases input { position: absolute; inset: 0; opacity: 0; font-size: 16px; letter-spacing: 40px; caret-color: transparent; z-index: 1; }
+.code-cases span { height: 58px; border-bottom: 2px solid var(--trait-fort); display: grid; place-items: center; font-family: var(--machine); font-size: 32px; }
+.code-cases span.plein { border-color: var(--papier); animation: frappe-code 0.25s var(--douce) both; }
+.code-cases span.actif { border-color: var(--gris-clair); }
+.code-cases:focus-within span.actif::after { content: ""; width: 2px; height: 28px; background: var(--papier); animation: clignote 0.8s steps(2) infinite; }
+@keyframes frappe-code { from { transform: translateY(-6px); opacity: 0; } }
+
+.champ-etat { position: relative; }
+.champ-etat input { font-family: var(--titre); font-size: 28px; letter-spacing: 1px; padding: 8px 110px 6px 12px; }
+.champ-etat > span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: var(--machine); font-size: 12px; }
+.vert { color: #8fbf75; }
+
+/* Porte vitrée d'agence : verre dépoli, lettres dorées. */
+.porte {
+  position: relative;
+  min-height: 170px;
+  padding: 16px 14px 18px;
+  background: linear-gradient(160deg, #3a3832 0%, #24231f 55%, #2e2c27 100%);
+  border: 6px solid #3b2a1a;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+}
+.porte.petite { min-height: 0; padding: 10px 12px 12px; }
+.porte::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 5px); pointer-events: none; }
+.porte::after { content: ""; position: absolute; top: -40%; left: -40%; width: 40%; height: 180%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); transform: rotate(18deg); animation: reflet-porte 5s var(--douce) infinite; pointer-events: none; }
+@keyframes reflet-porte { 0%, 60% { left: -40%; } 100% { left: 130%; } }
+.dore { font-family: var(--titre); color: #c8a96a; text-shadow: 0 1px 0 #6d5a33, 0 0 12px rgba(200, 169, 106, 0.25); letter-spacing: 2px; line-height: 0.95; overflow-wrap: anywhere; max-width: 100%; }
+.dore-petit { font-family: var(--machine); color: #b39558; font-size: 10px; letter-spacing: 2px; }
+.dore-petit.sous-titre { font-size: 9px; opacity: 0.8; margin-top: 4px; }
+
+.onglets.onglets-accueil { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.onglets-accueil a { padding: 14px 0 16px; letter-spacing: 1px; }
+.onglets-accueil a.actif { box-shadow: inset 0 2px 0 var(--rouge); }
+.pastille-compte { position: absolute; top: -9px; right: -16px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--rouge); color: var(--papier); font-family: var(--texte); font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+
+.carte-rdv { border: 1px solid var(--rouge); padding: 14px; display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; text-decoration: none; }
+.carte-rdv::before { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(215, 38, 30, 0.14) 50%, transparent 70%); animation: balaye-rdv 3.2s var(--douce) infinite; pointer-events: none; }
+@keyframes balaye-rdv { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.carte-rdv:active { transform: scale(0.985); }
+
+.ligne-associe { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--trait); }
+.ligne-associe:first-of-type { border-top: 1px solid var(--trait); margin-top: 6px; }
+.ligne-choix { appearance: none; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; cursor: pointer; text-align: left; min-height: 54px; }
+.qui { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nom { font-size: 22px; line-height: 1; letter-spacing: 0.5px; overflow-wrap: anywhere; }
+.initiale { width: 34px; height: 34px; flex: none; display: grid; place-items: center; font-family: var(--titre); font-size: 19px; background: var(--carte); border: 1px solid var(--trait-fort); }
+.initiale.attente { border-style: dashed; color: var(--gris); }
+.case-cocher { width: 22px; height: 22px; flex: none; border: 1px solid var(--gris); display: grid; place-items: center; font-size: 14px; transition: background 0.15s; }
+.case-cocher.on { background: var(--papier); color: var(--encre); border-color: var(--papier); }
+.bouton.r { border-color: var(--rouge); color: var(--rouge-texte); }
+
+.choix-dossier { appearance: none; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--trait-fort); transition: border-color 0.15s, background 0.15s; }
+.choix-dossier.choisi { border-color: var(--papier); background: var(--carte); }
+.choix-dossier:disabled { opacity: 0.4; cursor: default; }
+
+/* Bouton principal qui reste au bas de l'écran pendant le défilement. */
+.bouton-collant { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); margin-top: auto; z-index: 5; }
+
+/* ---------- Rendez-vous au bureau ---------- */
+
+.pneumatique { transform: rotate(-1deg); margin-top: 8px; padding-bottom: 20px; }
+.tampon-discret { position: absolute; right: 10px; bottom: -12px; color: var(--rouge); background: var(--papier); transform: rotate(-7deg); }
+.chemise { background: #c8a96a; color: #2b2210; padding: 20px 14px 14px; display: flex; flex-direction: column; gap: 4px; clip-path: polygon(0 10px, 38% 10px, 42% 0, 100% 0, 100% 100%, 0 100%); }
+
+.siege { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px dashed var(--trait-fort); }
+.siege:last-child { border-bottom: 1px dashed var(--trait-fort); }
+.siege .etat { margin-left: auto; font-size: 11px; letter-spacing: 1px; text-align: right; display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 0 4px; }
+.siege.attente .nom, .siege.attente .etat { color: var(--gris); }
+.siege.attente .initiale { border-style: dashed; color: var(--gris); }
+.siege.decline { opacity: 0.45; }
+.siege.decline .nom { text-decoration: line-through; }
+.siege.arrive { animation: arrive-siege 0.9s var(--ressort); }
+@keyframes arrive-siege { from { background: rgba(143, 191, 117, 0.2); } }
+.point-vert { width: 8px; height: 8px; border-radius: 50%; background: #8fbf75; display: inline-block; margin-right: 4px; animation: pouls-vert 1.8s infinite; }
+@keyframes pouls-vert { 0% { box-shadow: 0 0 0 0 rgba(143, 191, 117, 0.6); } 70%, 100% { box-shadow: 0 0 0 7px rgba(143, 191, 117, 0); } }
+.points-attente::after { content: "…"; display: inline-block; width: 1.2em; overflow: hidden; vertical-align: bottom; animation: points-attente 1.2s steps(4) infinite; }
+@keyframes points-attente { from { width: 0; } to { width: 1.2em; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .porte::after, .carte-rdv::before, .point-vert, .points-attente::after { animation: none; }
+}
+.caviarde { display: flex; gap: 8px; padding: 6px 0 4px; }
+.caviarde i { display: block; height: 26px; background: #2b2210; }

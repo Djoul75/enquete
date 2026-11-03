@@ -41,7 +41,7 @@ export function Partie({ route }: { route: RoutePartie }) {
 
   useEffect(() => {
     charger();
-    // En duel, on surveille l'autre joueur (accusation, révélation), et on
+    // À plusieurs, on surveille les autres joueurs (accusation, révélation), et on
     // recharge en revenant sur l'app.
     const id = window.setInterval(charger, 60_000);
     const auRetour = () => document.visibilityState === "visible" && charger();

@@ -1,42 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import { useAccueil } from "../lib/accueil";
 import { aller, heuresRestantes, useMaintenant } from "../lib/routeur";
 import { activerNotifications, etatNotifications } from "../lib/push";
-import type { Accueil, ResumePartie } from "../lib/types";
+import { OngletsAccueil } from "../composants/OngletsAccueil";
+import type { ResumeBureau, ResumePartie } from "../lib/types";
 
 // Limites fixées dans la base (enquete_etat) ; l'accueil ne les renvoie pas.
 const QUESTIONS = 15;
 const FOUILLES = 3;
 
 export function Dossiers() {
-  const [accueil, setAccueil] = useState<Accueil | null>(null);
-  const [erreur, setErreur] = useState<string | null>(null);
+  const { accueil, erreur, setErreur, charger } = useAccueil();
   const [occupe, setOccupe] = useState(false);
   const [notifs, setNotifs] = useState(etatNotifications());
   const maintenant = useMaintenant(30_000);
 
-  const charger = useCallback(() => {
-    api.accueil().then(setAccueil).catch((e: Error) => setErreur(e.message));
-  }, []);
-
-  useEffect(() => {
-    charger();
-    const id = window.setInterval(charger, 30_000);
-    const auRetour = () => document.visibilityState === "visible" && charger();
-    document.addEventListener("visibilitychange", auRetour);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", auRetour);
-    };
-  }, [charger]);
-
-  async function ouvrir(mode: "solo" | "duel") {
+  async function seul() {
     setOccupe(true);
     setErreur(null);
     try {
-      const id = await api.nouvellePartie(mode);
-      aller(`/p/${id}`);
+      aller(`/p/${await api.nouvellePartieSolo()}`);
     } catch (e) {
       setErreur((e as Error).message);
       setOccupe(false);
@@ -63,19 +48,16 @@ export function Dossiers() {
   }
 
   const enCours = accueil.parties.filter((p) => !p.revelee);
-  const archives = accueil.parties.filter((p) => p.revelee);
-  const resolues = archives.filter((p) => (p.score ?? 0) >= 50).length;
-  const adversaire = accueil.adversaire ?? "l'autre";
-  const plusRien = accueil.restantes_solo === 0 || accueil.restantes_duel === 0;
+  const { moi } = accueil;
 
   return (
     <main className="ecran pluie">
-      <div className="machine" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--gris-clair)" }}>
-        <span>BRIGADE CRIMINELLE</span>
-        <span style={{ display: "flex", gap: 6 }}>
-          <span className="compteur-archive">{resolues} RÉSOLUE{resolues > 1 ? "S" : ""}</span>
+      <div className="machine" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12, color: "var(--gris-clair)" }}>
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>AGENCE {moi.pseudo.toUpperCase()}</span>
+        <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <span className="compteur-archive">{moi.resolues} RÉSOLUE{moi.resolues > 1 ? "S" : ""}</span>
           <span className="compteur-archive" style={{ color: "var(--gris)" }}>
-            {archives.length - resolues} CLASSÉE{archives.length - resolues > 1 ? "S" : ""}
+            {moi.classees} CLASSÉE{moi.classees > 1 ? "S" : ""}
           </span>
         </span>
       </div>
@@ -83,6 +65,10 @@ export function Dossiers() {
       <h1 className="titre" style={{ fontSize: 88 }}>
         ENQUÊ<span className="rouge neon">T</span>E
       </h1>
+
+      {accueil.bureaux.map((b, i) => (
+        <CarteRendezVous key={b.id} bureau={b} rang={i} />
+      ))}
 
       {enCours.length > 0 && (
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -99,98 +85,92 @@ export function Dossiers() {
           <BoutonMode
             titre="SEUL"
             texte="Toi, la ville, et un menteur."
-            reste={accueil.restantes_solo}
+            bas={accueil.restantes_solo === 0 ? "Aucun dossier" : `${accueil.restantes_solo} dossier${accueil.restantes_solo > 1 ? "s" : ""} en attente`}
             disabled={occupe || accueil.restantes_solo === 0}
-            onClick={() => ouvrir("solo")}
+            onClick={seul}
           />
           <BoutonMode
-            titre="EN DUEL"
-            texte={`Contre ${adversaire}. Chacun pour soi.`}
-            reste={accueil.restantes_duel}
-            disabled={occupe || accueil.restantes_duel === 0}
-            onClick={() => ouvrir("duel")}
+            titre="À PLUSIEURS"
+            texte="Donne rendez-vous à tes associés."
+            bas={accueil.a_des_associes ? "De 2 à 6 privés" : "Ajoute d'abord un associé"}
+            disabled={occupe}
+            onClick={() => aller(accueil.a_des_associes ? "/preparer" : "/associes")}
             rouge
           />
         </div>
-        {plusRien &&
+        {accueil.restantes_solo === 0 &&
           (accueil.demande_en_cours ? (
             <p className="machine clignote" style={{ fontSize: 13, margin: 0 }}>
               UNE NOUVELLE AFFAIRE EST EN COURS D'ÉCRITURE…
             </p>
-          ) : (
+          ) : moi.admin ? (
             <button className="bouton" onClick={demander} disabled={occupe}>
               Plus de dossier en attente. <span className="rouge-texte">Faire écrire une nouvelle affaire →</span>
             </button>
+          ) : (
+            <p className="petit" style={{ margin: 0 }}>Tu as tout lu. Un nouveau dossier arrive chaque lundi.</p>
           ))}
       </section>
 
       {erreur && <p className="erreur">{erreur}</p>}
 
-      {archives.length > 0 && (
-        <section>
-          <span className="etiquette" style={{ display: "block", marginBottom: 6 }}>Archives</span>
-          {archives.map((p, i) => {
-            const resolue = (p.score ?? 0) >= 50;
-            return (
-              <a key={p.id} href={`#/p/${p.id}`} className="ligne-archive" style={{ borderBottom: i === archives.length - 1 ? "1px solid var(--trait)" : undefined }}>
-                <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                  <span className="titre" style={{ fontSize: 23, lineHeight: 1 }}>{p.titre.toUpperCase()}</span>
-                  <span className="petit" style={{ color: "var(--gris-clair)" }}>{sousTitreArchive(p)}</span>
-                </span>
-                <span className={`tampon${resolue ? "" : " rouge-texte"}`} style={{ transform: `rotate(${i % 2 ? 3 : -4}deg)` }}>
-                  {resolue ? "RÉSOLUE" : "CLASSÉE"}
-                </span>
-              </a>
-            );
-          })}
-        </section>
-      )}
-
-      <footer style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }} className="petit">
+      <footer style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }} className="petit">
         <a href="#/regles" className="lien-retour" style={{ fontSize: 12, color: "var(--papier)", textDecoration: "underline" }}>Comment on joue ?</a>
         {notifs === "active" ? (
           <span style={{ color: "var(--gris-clair)" }}>Notifications ✓</span>
         ) : notifs === "indisponible" ? (
           <span style={{ color: "var(--gris-clair)", textAlign: "center" }}>Ajoute à l'écran d'accueil pour les notifications</span>
         ) : (
-          <button className="lien-retour" style={{ fontSize: 12, color: "var(--gris-clair)", textDecoration: "underline" }} onClick={async () => setNotifs(await activerNotifications())}>
-            Notifications
+          <button className="lien-retour" style={{ fontSize: 12, color: "var(--rouge-texte)", textDecoration: "underline" }} onClick={async () => setNotifs(await activerNotifications())}>
+            Activer les notifications
           </button>
         )}
         <button className="lien-retour" style={{ fontSize: 12, color: "var(--gris)" }} onClick={() => supabase.auth.signOut()}>
           Quitter
         </button>
       </footer>
+
+      <OngletsAccueil actif="dossiers" demandes={accueil.demandes_associes} />
     </main>
   );
 }
 
-function dateCourte(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-}
-
-function sousTitreArchive(p: ResumePartie): string {
-  if (p.mode === "solo") return `${dateCourte(p.created_at)} · Seul · ${p.score ?? 0} pts`;
-  const autre = p.autres?.[0];
-  return `${dateCourte(p.created_at)} · Duel · toi ${p.score ?? 0}, ${autre?.nom ?? "?"} ${autre?.score ?? 0}`;
+function CarteRendezVous({ bureau, rang }: { bureau: ResumeBureau; rang: number }) {
+  const autres = bureau.autres ?? [];
+  const avec = autres.length ? `Avec ${autres.join(", ").replace(/, ([^,]*)$/, " et $1")}` : "";
+  return (
+    <a href={`#/bureau/${bureau.id}`} className="carte-rdv apparait" style={{ animationDelay: `${rang * 60}ms` }}>
+      <span className="etiquette rouge-texte">● {bureau.moi_hote ? "Ton bureau" : "Rendez-vous"}</span>
+      <span className="titre" style={{ fontSize: 28 }}>
+        {bureau.moi_hote ? `${bureau.presents} PRIVÉ${bureau.presents > 1 ? "S" : ""} ASSIS SUR ${bureau.attendus}` : `${bureau.hote.toUpperCase()} T'ATTEND À SON BUREAU`}
+      </span>
+      {avec && <span className="petit" style={{ color: "var(--gris-clair)" }}>{avec}</span>}
+      <span className="bouton plein" style={{ alignSelf: "flex-start", marginTop: 4 }}>
+        {bureau.moi_hote ? "Retourner au bureau →" : bureau.mon_statut === "present" ? "Retourner au bureau →" : "Monter au bureau →"}
+      </span>
+    </a>
+  );
 }
 
 function CarteEnCours({ partie, maintenant, rang }: { partie: ResumePartie; maintenant: number; rang: number }) {
-  const autre = partie.autres?.[0];
+  const autres = partie.autres ?? [];
+  const accusateur = autres.find((a) => a.a_accuse);
+  const restants = autres.filter((a) => !a.a_accuse);
   let bandeau: string | null = null;
-  if (partie.mode === "duel") {
+  if (partie.mode === "groupe") {
     if (partie.a_accuse) {
+      const qui = restants.length === 1 ? restants[0].nom : "les autres";
       bandeau = partie.echeance
-        ? `Accusation signée. ${autre?.nom} a encore ${heuresRestantes(partie.echeance, maintenant)}.`
-        : `Accusation signée. En attente de ${autre?.nom}.`;
-    } else if (autre?.a_accuse && partie.echeance) {
-      bandeau = `${autre.nom} a accusé · il te reste ${heuresRestantes(partie.echeance, maintenant)}`;
+        ? `Accusation signée. ${qui} ${restants.length === 1 ? "a" : "ont"} encore ${heuresRestantes(partie.echeance, maintenant)}.`
+        : `Accusation signée. En attente de ${qui}.`;
+    } else if (accusateur && partie.echeance) {
+      bandeau = `${accusateur.nom} a accusé · il te reste ${heuresRestantes(partie.echeance, maintenant)}`;
     }
   }
   return (
     <a href={`#/p/${partie.id}`} className="carte-en-cours apparait" style={{ animationDelay: `${rang * 60}ms` }}>
       <span className="tampon rouge-sombre" style={{ position: "absolute", right: 14, top: 14, transform: "rotate(6deg)" }}>
-        {partie.mode === "duel" ? "DUEL" : "SEUL"}
+        {partie.mode === "groupe" ? `À ${autres.length + 1}` : "SEUL"}
       </span>
       <span className="machine" style={{ fontSize: 12 }}>
         {partie.cadre.ville.toUpperCase()}, {partie.cadre.annee}
@@ -200,16 +180,14 @@ function CarteEnCours({ partie, maintenant, rang }: { partie: ResumePartie; main
         <span className="jauges">
           <Jauge nom={`QUESTIONS ${partie.questions}/${QUESTIONS}`} part={partie.questions / QUESTIONS} />
           <Jauge nom={`FOUILLES ${partie.fouilles}/${FOUILLES}`} part={partie.fouilles / FOUILLES} />
-          {partie.indices !== undefined && (
-            <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span className="machine" style={{ fontSize: 11 }}>{partie.indices} INDICE{partie.indices > 1 ? "S" : ""}</span>
-              <span style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                {Array.from({ length: Math.min(partie.indices, 12) }, (_, i) => (
-                  <span key={i} style={{ width: 7, height: 4, background: "var(--rouge)" }} />
-                ))}
-              </span>
+          <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span className="machine" style={{ fontSize: 11 }}>{partie.indices} INDICE{partie.indices > 1 ? "S" : ""}</span>
+            <span style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              {Array.from({ length: Math.min(partie.indices, 12) }, (_, i) => (
+                <span key={i} style={{ width: 7, height: 4, background: "var(--rouge)" }} />
+              ))}
             </span>
-          )}
+          </span>
         </span>
       )}
       {bandeau && (
@@ -239,7 +217,7 @@ function Jauge({ nom, part }: { nom: string; part: number }) {
 function BoutonMode(props: {
   titre: string;
   texte: string;
-  reste: number;
+  bas: string;
   disabled: boolean;
   onClick: () => void;
   rouge?: boolean;
@@ -260,7 +238,7 @@ function BoutonMode(props: {
       <span className="titre" style={{ fontSize: 30, lineHeight: 1 }}>{props.titre}</span>
       <span style={{ fontSize: 12, color: "var(--gris-clair)", lineHeight: 1.35 }}>{props.texte}</span>
       <span className="petit" style={{ marginTop: 4, color: "var(--gris-clair)" }}>
-        {props.reste === 0 ? "Aucun dossier" : `${props.reste} dossier${props.reste > 1 ? "s" : ""} en attente`}
+        {props.bas}
       </span>
     </button>
   );

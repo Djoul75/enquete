@@ -33,11 +33,15 @@ export function Regles() {
         <span className="petit" style={{ color: "var(--gris-clair)" }}>50 points ou plus : l'affaire est résolue. Sinon, classée.</span>
       </div>
 
-      <Regle numero="VS" titre="En duel">
-        Même affaire, chacun pour soi. Dès que l'un accuse, l'autre a 24 heures pour accuser à son tour. La vérité sort quand les deux ont signé.
+      <Regle numero="+" titre="À plusieurs">
+        Donne rendez-vous à tes associés dans ton bureau, jusqu'à six privés. Quand tout le monde est assis, tu ouvres l'enveloppe : même affaire pour tous, chacun pour soi. Dès que quelqu'un accuse, les autres ont 24 heures pour accuser à leur tour. La vérité sort quand tout le monde a signé.
       </Regle>
 
-      <a href="#/" className="gros-bouton papier-fond" style={{ marginTop: "auto" }}>À L'ENQUÊTE</a>
+      <Regle numero="★" titre="Tes associés">
+        Ajoute un ami avec le nom exact de son agence, dans l'onglet Associés. Il doit accepter. Sur iPhone, ajoute le jeu à l'écran d'accueil (Partager, puis Sur l'écran d'accueil) pour recevoir les rendez-vous en notification.
+      </Regle>
+
+      <a href="#/" className="gros-bouton papier-fond" style={{ marginTop: "auto" }}>AU BUREAU</a>
     </main>
   );
 }

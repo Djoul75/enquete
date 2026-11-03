@@ -9,7 +9,7 @@ const EXEMPLE = aplatir(JSON.parse(readFileSync(new URL("../affaires/01-vieux-po
 
 const CONSIGNES = `Tu écris des affaires pour « Enquête », un jeu d'enquête policière sur téléphone, en français, dans l'ambiance des films noirs et des vieux polars (Sin City, Melville, Simenon, Chandler).
 
-Comment on joue : le joueur lit la scène de crime, interroge les suspects en choisissant des questions dans une liste, fouille des lieux, épingle les indices trouvés, puis accuse un suspect en choisissant un mobile et UNE preuve parmi ses indices. Il n'a que 15 questions et 3 fouilles pour toute l'affaire : il ne pourra pas tout voir, il doit choisir. Une partie peut se jouer en duel : deux joueurs, la même affaire, chacun de son côté.
+Comment on joue : le joueur lit la scène de crime, interroge les suspects en choisissant des questions dans une liste, fouille des lieux, épingle les indices trouvés, puis accuse un suspect en choisissant un mobile et UNE preuve parmi ses indices. Il n'a que 15 questions et 3 fouilles pour toute l'affaire : il ne pourra pas tout voir, il doit choisir. Une partie peut se jouer à plusieurs (2 à 6 détectives privés) : la même affaire, chacun de son côté.
 
 Ce qui fait une bonne affaire :
 - Une énigme loyale : un joueur attentif peut trouver le coupable avec les seuls indices du jeu, sans deviner. Le coupable est trahi par une contradiction ou un détail précis (un lapsus, un alibi qui ne tient pas, un objet qu'il ne devrait pas avoir), idéalement révélé par une question « Montrer … » débloquée par un indice.

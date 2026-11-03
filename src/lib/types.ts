@@ -70,7 +70,7 @@ export type EntreeJournal = {
 export type Accusation = { suspect: string; mobile: string; preuve: string; at: string };
 
 export type EtatPartie = {
-  partie: { id: number; mode: "solo" | "duel"; echeance: string | null; revelee: boolean };
+  partie: { id: number; mode: Mode; echeance: string | null; revelee: boolean };
   affaire: { id: number; titre: string; public: AffairePublic };
   moi: { notes: string; accusation: Accusation | null; score: number | null };
   journal: EntreeJournal[];
@@ -86,15 +86,17 @@ export type EtatPartie = {
       preuve: string | null;
       score: number;
       questions: number;
-      indices?: string[]; // migration 0002
+      indices: string[];
     }[];
   } | null;
   limites: { questions: number; fouilles: number };
 };
 
+export type Mode = "solo" | "groupe";
+
 export type ResumePartie = {
   id: number;
-  mode: "solo" | "duel";
+  mode: Mode;
   echeance: string | null;
   created_at: string;
   revelee: boolean;
@@ -104,15 +106,47 @@ export type ResumePartie = {
   score: number | null;
   questions: number;
   fouilles: number;
-  indices?: number; // migration 0002
+  indices: number;
   autres: { nom: string; a_accuse: boolean; score: number | null }[] | null;
 };
 
+// Un rendez-vous au bureau pas encore ouvert, vu de l'accueil.
+export type ResumeBureau = {
+  id: number;
+  hote: string;
+  moi_hote: boolean;
+  mon_statut: "invite" | "present";
+  presents: number;
+  attendus: number;
+  autres: string[] | null;
+};
+
 export type Accueil = {
-  moi: string;
-  adversaire: string | null;
+  moi: { pseudo: string; admin: boolean; resolues: number; classees: number; record: number | null };
   parties: ResumePartie[];
+  bureaux: ResumeBureau[];
+  demandes_associes: number;
+  a_des_associes: boolean;
   restantes_solo: number;
-  restantes_duel: number;
   demande_en_cours: boolean;
+};
+
+export type Moi = { pseudo: string | null; admin: boolean };
+
+export type Associes = {
+  amis: { pseudo: string; ensemble: number; moi_devant: number; lui_devant: number }[];
+  recues: string[];
+  envoyees: string[];
+};
+
+export type DossierPossible = { id: number; titre: string; cadre: AffairePublic["cadre"] };
+
+export type Bureau = {
+  id: number;
+  hote: string;
+  moi_hote: boolean;
+  lancee: boolean;
+  created_at: string;
+  affaire: { titre: string; cadre: AffairePublic["cadre"] } | null;
+  participants: { pseudo: string; statut: "invite" | "present" | "decline"; hote: boolean; moi: boolean }[];
 };

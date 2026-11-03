@@ -1,5 +1,6 @@
-// Teste la migration sur un Postgres en mémoire (PGlite) : simule une partie
-// en duel de bout en bout. Usage : node scripts/test-sql.mjs [affaires/x.json]
+// Teste la migration sur un Postgres en mémoire (PGlite) : agences,
+// associés, rendez-vous au bureau, puis une partie à trois de bout en bout.
+// Usage : node scripts/test-sql.mjs [affaires/x.json]
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { charger } from "../worker/affaire.mjs";
@@ -7,26 +8,27 @@ import { charger } from "../worker/affaire.mjs";
 const db = new PGlite();
 const JULES = "11111111-1111-1111-1111-111111111111";
 const JO = "22222222-2222-2222-2222-222222222222";
+const MARCO = "33333333-3333-3333-3333-333333333333";
+const INCONNU = "44444444-4444-4444-4444-444444444444";
 
 // Ce que Supabase fournit et que la migration suppose.
 await db.exec(`
-  create role anon; create role authenticated;
+  create role anon; create role authenticated; create role service_role;
   create schema auth;
+  create table auth.users (id uuid primary key);
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
-  create table profiles (id uuid primary key, full_name text);
-  insert into profiles values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');
+  insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${INCONNU}');
 `);
-await db.exec(readFileSync(new URL("../supabase/migrations/0001_enquete.sql", import.meta.url), "utf8"));
-await db.exec(readFileSync(new URL("../supabase/migrations/0002_revelation_indices.sql", import.meta.url), "utf8"));
-await db.exec(`insert into enquete_joueurs values ('${JULES}', 'Jules'), ('${JO}', 'Joséphine');`);
+await db.exec(readFileSync(new URL("../supabase/migrations/0001_agence.sql", import.meta.url), "utf8"));
 
-const fichier = process.argv[2] ?? new URL("../affaires/01-vieux-port.json", import.meta.url);
-const affaire = charger(fichier);
-const { rows } = await db.query(
-  "insert into enquete_affaires (titre, public) values ($1, $2) returning id",
-  [affaire.titre, affaire.public]
-);
-await db.query("insert into enquete_affaires_secret values ($1, $2)", [rows[0].id, affaire.secret]);
+const fichiers = process.argv[2]
+  ? [process.argv[2]]
+  : ["../affaires/01-vieux-port.json", "../affaires/02-train-bleu.json"].map((f) => new URL(f, import.meta.url));
+const affaires = fichiers.map((f) => charger(f));
+for (const affaire of affaires) {
+  const { rows } = await db.query("insert into enquete_affaires (titre, public) values ($1, $2) returning id", [affaire.titre, affaire.public]);
+  await db.query("insert into enquete_affaires_secret values ($1, $2)", [rows[0].id, affaire.secret]);
+}
 
 async function en(uid, sql, params = []) {
   await db.exec(`set test.uid = '${uid}'`);
@@ -51,12 +53,53 @@ async function doitEchouer(uid, sql, params, message) {
   verifier(false, message);
 }
 
-const accueil = await en(JULES, "select enquete_accueil()");
-verifier(accueil.restantes_duel === 1, "une affaire disponible");
+// --- Agences --------------------------------------------------------------
+const moi = await en(JULES, "select enquete_moi()");
+verifier(moi.pseudo === null, "un nouveau compte n'a pas encore de nom");
+await doitEchouer(JULES, "select enquete_accueil()", [], "pas d'accueil sans nom d'agence");
+verifier(!(await en(JULES, "select enquete_pseudo_libre('ab')")), "pseudo trop court refusé");
+await en(JULES, "select enquete_choisir_pseudo('Jules')");
+await en(JO, "select enquete_choisir_pseudo('Joséphine')");
+await en(MARCO, "select enquete_choisir_pseudo('Marco')");
+verifier(!(await en(INCONNU, "select enquete_pseudo_libre('JULES')")), "pseudo pris, majuscules ignorées");
+await doitEchouer(INCONNU, "select enquete_choisir_pseudo('jules')", [], "pas deux portes au même nom");
+await doitEchouer(INCONNU, "select enquete_choisir_pseudo('a b c')", [], "espaces refusés");
+await doitEchouer(JULES, "select enquete_choisir_pseudo('Autre')", [], "on ne renomme pas son agence");
 
-const partie = await en(JULES, "select enquete_nouvelle_partie('duel')");
+// --- Associés -------------------------------------------------------------
+verifier((await en(JULES, "select enquete_ajouter_associe('joséphine')")) === "demande", "Jules demande Joséphine");
+let assoc = await en(JO, "select enquete_associes()");
+verifier(assoc.recues[0] === "Jules" && assoc.amis.length === 0, "Joséphine voit la demande");
+await en(JO, "select enquete_repondre_associe('Jules', true)");
+verifier((await en(JULES, "select enquete_ajouter_associe('Marco')")) === "demande", "Jules demande Marco");
+verifier((await en(MARCO, "select enquete_ajouter_associe('jules')")) === "associes", "demande croisée : associés d'office");
+await doitEchouer(JULES, "select enquete_ajouter_associe('Personne')", [], "pseudo inconnu");
+await doitEchouer(JULES, "select enquete_ajouter_associe('Jules')", [], "pas soi-même");
+assoc = await en(JULES, "select enquete_associes()");
+verifier(assoc.amis.map((a) => a.pseudo).join() === "Joséphine,Marco", "Jules a deux associés");
+await doitEchouer(JO, "select enquete_preparer(array['Marco'], null)", [], "on ne convoque que ses associés");
+
+// --- Rendez-vous au bureau ------------------------------------------------
+const possibles = await en(JULES, "select enquete_dossiers_possibles(array['Joséphine','Marco'])");
+verifier(possibles.length === affaires.length, `${possibles.length} dossiers jamais lus`);
+const partie = await en(JULES, "select enquete_preparer(array['Joséphine','Marco'], null)");
+let accueil = await en(JO, "select enquete_accueil()");
+verifier(accueil.bureaux[0]?.hote === "Jules" && accueil.bureaux[0].mon_statut === "invite", "Joséphine voit le rendez-vous");
+await doitEchouer(JO, "select enquete_ouvrir_dossier($1)", [partie], "seul l'hôte ouvre le dossier");
+await doitEchouer(JO, "select enquete_etat($1)", [partie], "pas d'enquête avant l'ouverture");
+let bureau = await en(JO, "select enquete_bureau($1)", [partie]);
+verifier(bureau.participants.filter((p) => p.statut === "present").length === 2 && !bureau.affaire, "Joséphine s'assoit, enveloppe cachetée");
+bureau = await en(MARCO, "select enquete_bureau($1)", [partie]);
+verifier(bureau.participants.every((p) => p.statut === "present"), "Marco s'assoit, tout le monde est là");
+await en(JULES, "select enquete_ouvrir_dossier($1)", [partie]);
+bureau = await en(MARCO, "select enquete_bureau($1)", [partie]);
+verifier(bureau.lancee, "le bureau sait que le dossier est ouvert");
+
+// --- La partie ------------------------------------------------------------
 let etat = await en(JO, "select enquete_etat($1)", [partie]);
+const affaire = affaires.find((a) => a.titre === etat.affaire.titre);
 verifier(etat.revelation === null && !JSON.stringify(etat).includes(affaire.secret.solution.recit), "la solution ne fuit pas");
+verifier(etat.autres.length === 2, "trois privés sur l'affaire");
 
 const pub = affaire.public;
 const libre = pub.questions.find((q) => !q.requiert);
@@ -67,13 +110,11 @@ if (bloquee) {
   await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, bloquee.id], "question verrouillée refusée");
 }
 
-// Jules trouve un indice qui sert de preuve, puis accuse.
-let preuve = null;
 for (const lieu of pub.lieux.slice(0, 3)) {
   etat = await en(JULES, "select enquete_fouiller($1, $2)", [partie, lieu.id]);
 }
 await doitEchouer(JULES, "select enquete_fouiller($1, $2)", [partie, pub.lieux[3].id], "4e fouille refusée");
-preuve = etat.journal.find((e) => e.indice)?.indice.id;
+const preuve = etat.journal.find((e) => e.indice)?.indice.id;
 verifier(preuve, "au moins un indice trouvé en fouillant");
 
 const sol = affaire.secret.solution;
@@ -81,21 +122,50 @@ etat = await en(JULES, "select enquete_accuser($1, $2, $3, $4)", [partie, sol.co
 verifier(etat.partie.echeance && !etat.partie.revelee, "Jules accuse : échéance de 24 h, pas encore révélé");
 await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, libre.id], "plus d'action après avoir accusé");
 
-etat = await en(JO, "select enquete_etat($1)", [partie]);
-verifier(etat.autres[0].a_accuse && etat.revelation === null, "Joséphine voit que Jules a accusé, sans savoir qui");
+etat = await en(MARCO, "select enquete_fouiller($1, $2)", [partie, pub.lieux[0].id]);
+const preuveMarco = etat.journal.find((e) => e.indice)?.indice.id;
+if (preuveMarco) {
+  const autre = pub.suspects.find((s) => s.id !== sol.coupable).id;
+  etat = await en(MARCO, "select enquete_accuser($1, $2, $3, $4)", [partie, autre, sol.mobile, preuveMarco]);
+  verifier(!etat.partie.revelee, "Marco accuse, Joséphine n'a pas encore accusé");
+}
 
-// Joséphine laisse filer le délai.
+etat = await en(JO, "select enquete_etat($1)", [partie]);
+verifier(etat.autres[0].a_accuse && etat.revelation === null, "Joséphine voit qu'on a accusé, sans savoir qui");
+
 await db.exec(`update enquete_parties set echeance = now() - interval '1 minute' where id = ${partie}`);
 etat = await en(JO, "select enquete_etat($1)", [partie]);
 verifier(etat.partie.revelee && etat.revelation.solution.coupable === sol.coupable, "délai passé : révélation");
 const scores = Object.fromEntries(etat.revelation.joueurs.map((j) => [j.nom, j.score]));
-verifier(scores["Joséphine"] === 0 && scores["Jules"] >= 70, `scores ${JSON.stringify(scores)}`);
+verifier(scores["Joséphine"] === 0 && scores["Jules"] >= 70 && etat.revelation.joueurs[0].nom === "Jules", `classement ${JSON.stringify(scores)}`);
 
-await doitEchouer(JULES, "select enquete_nouvelle_partie('duel')", [], "plus d'affaire disponible");
-await doitEchouer(
-  "33333333-3333-3333-3333-333333333333",
-  "select enquete_accueil()",
-  [],
-  "un inconnu n'a pas accès"
-);
+accueil = await en(JULES, "select enquete_accueil()");
+verifier(accueil.moi.resolues === 1 && accueil.moi.record >= 70 && accueil.bureaux.length === 0, "l'accueil compte l'affaire résolue");
+assoc = await en(JULES, "select enquete_associes()");
+verifier(assoc.amis.find((a) => a.pseudo === "Joséphine").moi_devant === 1, "bilan entre associés");
+
+// --- Revanche, dossiers déjà lus, départs ---------------------------------
+const revanche = await en(JO, "select enquete_revanche($1)", [partie]);
+bureau = await en(JO, "select enquete_bureau($1)", [revanche]);
+verifier(bureau.participants.map((p) => p.pseudo).sort().join() === "Joséphine,Jules", "revanche avec ses seuls associés");
+await en(JULES, "select enquete_quitter_bureau($1)", [revanche]);
+bureau = await en(JO, "select enquete_bureau($1)", [revanche]);
+verifier(bureau.participants.find((p) => p.pseudo === "Jules").statut === "decline", "Jules décline");
+await doitEchouer(JO, "select enquete_ouvrir_dossier($1)", [revanche], "seule au bureau, on n'ouvre pas");
+await en(JO, "select enquete_quitter_bureau($1)", [revanche]);
+await doitEchouer(JO, "select enquete_bureau($1)", [revanche], "l'hôte part : rendez-vous annulé");
+
+const lue = (await en(JULES, "select enquete_dossiers_possibles(array['Marco'])")).map((d) => d.titre);
+verifier(!lue.includes(affaire.titre), "le dossier lu n'est plus proposé");
+await doitEchouer(JULES, "select enquete_preparer(array['Marco'], $1)", [etat.affaire.id], "on ne propose pas un dossier déjà lu");
+
+const solo = await en(MARCO, "select enquete_nouvelle_partie('solo')");
+etat = await en(MARCO, "select enquete_etat($1)", [solo]);
+verifier(etat.affaire.titre !== affaire.titre || affaires.length === 1, "seul : une affaire pas encore lue");
+
+await doitEchouer(JULES, "select enquete_demander_affaire()", [], "nouvelle affaire réservée à l'admin");
+await db.exec(`update enquete_joueurs set admin = true where user_id = '${JULES}'`);
+await en(JULES, "select enquete_demander_affaire()");
+verifier((await en(JULES, "select enquete_accueil()")).demande_en_cours, "l'admin fait écrire une affaire");
+await doitEchouer(INCONNU, "select enquete_accueil()", [], "un compte sans agence n'a pas accès");
 console.log("Tout est bon.");

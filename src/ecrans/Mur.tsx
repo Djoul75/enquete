@@ -88,7 +88,7 @@ export function Mur({ etat, dejaVus, onVu, lectureSeule }: { etat: EtatPartie; d
             ))}
           </div>
         )}
-        <span className="petit">{etat.partie.mode === "duel" ? "Personne d'autre ne voit ton mur." : "Ton mur, tes indices."}</span>
+        <span className="petit">{etat.partie.mode === "groupe" ? "Personne d'autre ne voit ton mur." : "Ton mur, tes indices."}</span>
       </div>
 
       {!lectureSeule && <BarreOnglets etat={etat} actif="mur" />}

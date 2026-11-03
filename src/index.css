@@ -1,3 +1,11 @@
+/* Polices embarquées (licence OFL), sous-ensemble latin : rien à
+   télécharger ailleurs, et le service worker les garde sur le téléphone. */
+@font-face { font-family: "Bebas Neue"; font-style: normal; font-weight: 400; font-display: swap; src: url("./polices/bebas-neue.woff2") format("woff2"); }
+@font-face { font-family: "Special Elite"; font-style: normal; font-weight: 400; font-display: swap; src: url("./polices/special-elite.woff2") format("woff2"); }
+@font-face { font-family: "Courier Prime"; font-style: normal; font-weight: 400; font-display: swap; src: url("./polices/courier-prime.woff2") format("woff2"); }
+@font-face { font-family: "Courier Prime"; font-style: normal; font-weight: 700; font-display: swap; src: url("./polices/courier-prime-gras.woff2") format("woff2"); }
+@font-face { font-family: "Courier Prime"; font-style: italic; font-weight: 400; font-display: swap; src: url("./polices/courier-prime-italique.woff2") format("woff2"); }
+
 :root {
   --encre: #0b0b0b;
   --papier: #ede8dd;
@@ -895,3 +903,30 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .ligne-rapport { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0 4px; border-bottom: 1px dashed #8a867e; font-size: 30px; animation: apparait 0.45s var(--douce) both; }
 .ligne-rapport .titre { font-size: 30px; }
 .tuto-bureau { display: flex; flex-direction: column; }
+
+/* ---------- Hors ligne ---------- */
+
+.hors-ligne {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  z-index: 46;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 16px 6px;
+  background: var(--rouge);
+  color: var(--encre);
+  font-size: 11px;
+  animation: entree-haut 0.35s var(--douce) both;
+}
+@keyframes entree-haut { from { transform: translateY(-100%); } }
+
+/* Emplacement d'un contenu en route : un reflet passe dessus. */
+.reflet {
+  display: block;
+  background: linear-gradient(100deg, var(--carte) 30%, #24231f 50%, var(--carte) 70%) 0 0 / 300% 100%;
+  animation: reflet 1.4s linear infinite;
+}
+@keyframes reflet { from { background-position: 100% 0; } to { background-position: -50% 0; } }

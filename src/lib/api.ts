@@ -1,9 +1,19 @@
 import { supabase } from "./supabase";
 import type { Accueil, Agence, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
 
+// Les refus écrits par le jeu (raise exception, code P0001) sont déjà en
+// français et parlent au joueur ; tout le reste est remplacé par un message
+// simple, le détail technique restant dans la console.
 async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "P0001") throw new Error(error.message);
+    console.error(fn, error);
+    if (!navigator.onLine || /fetch|network|load failed/i.test(error.message)) {
+      throw new Error("Connexion perdue. Vérifie ton réseau et réessaie.");
+    }
+    throw new Error("Le bureau ne répond pas. Réessaie dans un instant.");
+  }
   return data as T;
 }
 

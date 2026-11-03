@@ -42,7 +42,21 @@ export function Dossiers() {
   if (!accueil) {
     return (
       <main className="ecran pluie">
-        {erreur ? <p className="erreur">{erreur}</p> : <span className="etiquette clignote">Ouverture des dossiers…</span>}
+        <h1 className="titre" style={{ fontSize: 88 }}>
+          ENQUÊ<span className="rouge neon">T</span>E
+        </h1>
+        {erreur ? (
+          <p className="erreur">{erreur}</p>
+        ) : (
+          <>
+            <span className="reflet" style={{ height: 150 }} />
+            <span className="reflet" style={{ height: 14, width: "40%" }} />
+            <span className="grille-2" style={{ gap: 10 }}>
+              <span className="reflet" style={{ height: 120 }} />
+              <span className="reflet" style={{ height: 120 }} />
+            </span>
+          </>
+        )}
       </main>
     );
   }

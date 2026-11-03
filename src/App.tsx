@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import { api } from "./lib/api";
@@ -8,20 +8,39 @@ import { Pseudo } from "./ecrans/Pseudo";
 import { Dossiers } from "./ecrans/Dossiers";
 import { Associes } from "./ecrans/Associes";
 import { Archives } from "./ecrans/Archives";
-import { Preparer } from "./ecrans/Preparer";
-import { BureauRdv } from "./ecrans/Bureau";
-import { Partie } from "./ecrans/Partie";
-import { Regles } from "./ecrans/Regles";
 import { Compte } from "./ecrans/Compte";
-import { Tuto } from "./ecrans/Tuto";
-import { Installer } from "./ecrans/Installer";
 import { installationAMontrer } from "./lib/installation";
+import { HorsLigne } from "./composants/HorsLigne";
+
+// Les écrans lourds (partie, dessins des suspects et des lieux) arrivent en
+// morceaux séparés, téléchargés en arrière-plan dès que l'accueil est affiché :
+// l'accueil s'ouvre vite, et la suite est déjà là quand on la touche.
+const charges = {
+  partie: () => import("./ecrans/Partie"),
+  bureau: () => import("./ecrans/Bureau"),
+  preparer: () => import("./ecrans/Preparer"),
+  regles: () => import("./ecrans/Regles"),
+  tuto: () => import("./ecrans/Tuto"),
+  installer: () => import("./ecrans/Installer"),
+};
+const Partie = lazy(() => charges.partie().then((m) => ({ default: m.Partie })));
+const BureauRdv = lazy(() => charges.bureau().then((m) => ({ default: m.BureauRdv })));
+const Preparer = lazy(() => charges.preparer().then((m) => ({ default: m.Preparer })));
+const Regles = lazy(() => charges.regles().then((m) => ({ default: m.Regles })));
+const Tuto = lazy(() => charges.tuto().then((m) => ({ default: m.Tuto })));
+const Installer = lazy(() => charges.installer().then((m) => ({ default: m.Installer })));
+
+function precharger() {
+  const tout = () => Object.values(charges).forEach((f) => f().catch(() => {}));
+  if ("requestIdleCallback" in window) requestIdleCallback(tout, { timeout: 2000 });
+  else setTimeout(tout, 1000);
+}
 
 // Le pseudo est gardé dans le navigateur pour ouvrir l'app sans attendre la
 // base ; la page Compte le met à jour quand on le change.
 const clePseudo = (uid: string) => `enquete-pseudo-${uid}`;
 
-export function App() {
+function Ecran() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [connu, setConnu] = useState<{ uid: string; pseudo: string | null } | null>(null);
   // Premier passage sur téléphone, hors de l'app installée : d'abord
@@ -69,4 +88,16 @@ export function App() {
   if (route.ecran === "bureau") return <BureauRdv key={route.partie} partie={route.partie} pseudo={pseudo} />;
   if (route.ecran === "partie") return <Partie key={route.partie} route={route} />;
   return <Dossiers />;
+}
+
+export function App() {
+  useEffect(precharger, []);
+  return (
+    <>
+      <HorsLigne />
+      <Suspense fallback={null}>
+        <Ecran />
+      </Suspense>
+    </>
+  );
 }

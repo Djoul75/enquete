@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { mouvementReduit } from "../lib/effets";
 
 // L'enseigne au néon à l'ouverture de l'app installée (maquette B validée).
 // Elle prend le relais de l'image de lancement de l'iPhone, identique mais
@@ -33,9 +32,4 @@ export function Demarrage({ onFini }: { onFini: () => void }) {
       <span className="machine enseigne-pied">AGENCE DE DÉTECTIVES PRIVÉS</span>
     </div>
   );
-}
-
-export function demarrageAMontrer(installee: boolean): boolean {
-  if (mouvementReduit()) return false;
-  return installee || new URLSearchParams(window.location.search).has("demarrage");
 }

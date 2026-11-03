@@ -9,8 +9,8 @@ import { Dossiers } from "./ecrans/Dossiers";
 import { Associes } from "./ecrans/Associes";
 import { Archives } from "./ecrans/Archives";
 import { Compte } from "./ecrans/Compte";
-import { installationAMontrer, installee } from "./lib/installation";
-import { Demarrage, demarrageAMontrer } from "./composants/Demarrage";
+import { demarrageAMontrer, installationAMontrer } from "./lib/installation";
+import { Demarrage } from "./composants/Demarrage";
 import { HorsLigne } from "./composants/HorsLigne";
 
 // Les écrans lourds (partie, dessins des suspects et des lieux) arrivent en
@@ -92,7 +92,7 @@ function Ecran() {
 }
 
 export function App() {
-  const [enseigne, setEnseigne] = useState(() => demarrageAMontrer(installee()));
+  const [enseigne, setEnseigne] = useState(demarrageAMontrer);
   const finEnseigne = useCallback(() => setEnseigne(false), []);
   useEffect(precharger, []);
   return (

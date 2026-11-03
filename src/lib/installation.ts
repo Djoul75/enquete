@@ -15,6 +15,13 @@ export function installee(): boolean {
   return window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
 }
 
+// L'enseigne au néon s'allume à l'ouverture de l'app installée (et avec
+// ?demarrage dans l'adresse, pour la voir ailleurs).
+export function demarrageAMontrer(): boolean {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  return installee() || new URLSearchParams(window.location.search).has("demarrage");
+}
+
 const CLE_VU = "enquete-installer-vu";
 
 export function installationAMontrer(): boolean {

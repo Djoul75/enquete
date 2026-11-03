@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { EtatTampon } from "./tampons";
 import type { Accueil, Agence, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
 
 // Les refus écrits par le jeu (raise exception, code P0001) sont déjà en
@@ -47,4 +48,6 @@ export const api = {
     rpc<EtatPartie>("enquete_accuser", { p_partie: partie, p_suspect: suspect, p_mobile: mobile, p_preuve: preuve }),
   sauverNotes: (partie: number, notes: string) => rpc<void>("enquete_sauver_notes", { p_partie: partie, p_notes: notes }),
   demanderAffaire: () => rpc<void>("enquete_demander_affaire"),
+  tampons: () => rpc<EtatTampon[]>("enquete_tampons"),
+  tamponsVus: (cles: string[]) => rpc<void>("enquete_tampons_vus", { p_cles: cles }),
 };

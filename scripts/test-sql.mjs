@@ -19,7 +19,7 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${INCONNU}');
 `);
-for (const m of ["0001_agence.sql", "0002_compte.sql"]) {
+for (const m of ["0001_agence.sql", "0002_compte.sql", "0003_tampons.sql"]) {
   await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
 }
 
@@ -158,6 +158,16 @@ verifier(scores["Joséphine"] === 0 && scores["Jules"] >= 70 && etat.revelation.
 
 accueil = await en(JULES, "select enquete_accueil()");
 verifier(accueil.moi.resolues === 1 && accueil.moi.record >= 70 && accueil.bureaux.length === 0, "l'accueil compte l'affaire résolue");
+let tampons = Object.fromEntries((await en(JULES, "select enquete_tampons()")).map((t) => [t.cle, t]));
+verifier(tampons.premiere.obtenu_at && tampons.premiere.partie === partie && !tampons.premiere.vu, "tampon : première affaire");
+verifier(tampons.econome.obtenu_at && tampons.premier_table.obtenu_at, "tampons : économe, premier à table");
+verifier(!tampons.flair.obtenu_at && !tampons.tablee.obtenu_at && tampons.dix.progres === 1 && tampons.dix.sur === 10, "pas de flair à 79, dix dossiers à 1/10");
+verifier(tampons.associes.progres === 2 && !tampons.associes.obtenu_at, "deux associés sur trois");
+verifier(!(await en(JO, "select enquete_tampons()")).find((t) => t.cle === "premiere").obtenu_at, "Joséphine n'a rien résolu");
+await en(JULES, "select enquete_tampons_vus(array['premiere', 'econome'])");
+await en(JULES, "select enquete_tampons_vus(array['premiere'])");
+tampons = Object.fromEntries((await en(JULES, "select enquete_tampons()")).map((t) => [t.cle, t]));
+verifier(tampons.premiere.vu && tampons.econome.vu && !tampons.premier_table.vu, "tampons marqués comme vus");
 assoc = await en(JULES, "select enquete_associes()");
 verifier(assoc.amis.find((a) => a.pseudo === "Joséphine").moi_devant === 1, "bilan entre associés");
 

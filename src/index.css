@@ -980,3 +980,133 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .demarrage .flaque { width: 340px; max-width: 90%; height: 160px; margin-top: 40px; background: radial-gradient(ellipse at 50% 0%, rgba(215, 38, 30, 0.35), transparent 65%); filter: blur(6px); }
 .enseigne-pied { position: absolute; bottom: calc(44px + env(safe-area-inset-bottom)); font-size: 11px; letter-spacing: 2px; color: var(--gris); }
 @media (max-width: 360px) { .enseigne-mot { font-size: 88px; } }
+
+/* ---------- Tampons : visas du passeport ---------- */
+
+.visa {
+  --encre-t: #a51d17;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  box-sizing: border-box;
+  padding: 0.6em;
+  color: var(--encre-t);
+  text-align: center;
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+.visa.encre-violet { --encre-t: #3c2a7a; }
+.visa.encre-bleu { --encre-t: #1f4a6b; }
+.visa.encre-noir { --encre-t: #1c1a17; }
+.visa.rond { width: 12.8em; height: 12.8em; border-radius: 50%; border: 0.45em double; }
+.visa.rect { width: 15em; height: 8.8em; border: 0.3em solid; box-shadow: inset 0 0 0 0.25em #e9e2cf, inset 0 0 0 0.4em var(--encre-t); }
+.visa.ovale { width: 15em; height: 9.8em; border-radius: 50%; border: 0.3em solid; }
+.visa.triangle { width: 13.6em; height: 12em; clip-path: polygon(50% 0, 100% 100%, 0 100%); background: var(--encre-t); color: #e9e2cf; justify-content: flex-end; padding-bottom: 1.1em; gap: 0.1em; }
+.visa-haut { font-family: var(--machine); font-size: 0.8em; letter-spacing: 0.15em; }
+.visa-nom { font-family: var(--titre); font-size: 2.5em; line-height: 0.9; }
+.visa.triangle .visa-nom { font-size: 2em; }
+.visa-date { font-family: var(--machine); font-size: 0.85em; letter-spacing: 0.05em; }
+/* Encre usée : des trous de papier semés sur le tampon. */
+.visa::after {
+  content: "";
+  position: absolute;
+  inset: -0.5em;
+  pointer-events: none;
+  background-image: radial-gradient(#e9e2cf 0.07em, transparent 0.1em), radial-gradient(#e9e2cf 0.05em, transparent 0.08em);
+  background-size: 0.9em 0.7em, 1.3em 1.1em;
+  background-position: 0 0, 0.4em 0.3em;
+  opacity: 0.55;
+}
+
+/* Le passeport : une page de 358 × 520 dessinée en em, mise à l'échelle de
+   l'écran par la taille de police (100cqw = la largeur de la page). */
+.passeport { container-type: inline-size; position: relative; width: 100%; aspect-ratio: 358 / 520; touch-action: pan-y; }
+.passeport-page {
+  position: absolute;
+  inset: 0;
+  font-size: calc(100cqw / 35.8);
+  color: var(--encre);
+  background-color: #e9e2cf;
+  background-image: repeating-linear-gradient(0deg, rgba(11, 11, 11, 0.035) 0 1px, transparent 1px 2.2em), radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35), transparent 60%);
+  box-shadow: inset -1.4em 0 2em -1.2em rgba(0, 0, 0, 0.35), 0 1em 2.4em rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.passeport-entete { position: absolute; left: 1.4em; top: 1.2em; font-family: var(--machine); font-size: 0.9em; letter-spacing: 0.2em; color: #55524c; }
+.passeport-place { position: absolute; width: 15em; height: 13em; display: flex; align-items: center; justify-content: center; }
+.passeport-place > span { display: flex; }
+.visa-libre { width: 14em; height: 9em; box-sizing: border-box; border: 0.2em dashed #b5ad98; color: #8a867e; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3em; padding: 0.6em; text-align: center; font-size: 1em; line-height: 1.25; }
+
+/* ---------- Le coup de tampon ---------- */
+
+.coup-tampon {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  color: var(--encre);
+  background-color: #e9e2cf;
+  background-image: radial-gradient(rgba(11, 11, 11, 0.06) 1px, transparent 1.2px);
+  background-size: 5px 5px;
+  animation: apparait 0.25s var(--douce) both;
+  overflow-y: auto;
+}
+.coup-scene {
+  max-width: 448px;
+  min-height: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: calc(28px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: secousse 0.28s linear 0.38s both;
+}
+.coup-etiquette { font-size: 12px; letter-spacing: 3px; color: #55524c; }
+.coup-zone { position: relative; margin-top: 6vh; height: 270px; width: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.coup-empreinte { display: flex; transform: rotate(-9deg); animation: empreinte 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.38s both; }
+.coup-empreinte .visa { opacity: 0.92; }
+/* Le manche en bois : il tombe, frappe, et repart. */
+.coup-manche {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220px;
+  margin-left: -110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  transform: translateY(-100vh);
+  animation: manche 0.95s cubic-bezier(0.55, 0, 0.6, 1) both;
+}
+.coup-manche i { width: 76px; height: 150px; border-radius: 32px 32px 8px 8px; background: linear-gradient(90deg, #3b2a1a, #8a6238 45%, #3b2a1a); }
+.coup-manche b { width: 220px; height: 26px; background: linear-gradient(#2b1e12, #1a120a); box-shadow: 0 6px 0 #1c1a17; }
+@keyframes manche {
+  0% { transform: translateY(-100vh); }
+  40% { transform: translateY(-176px); }
+  55% { transform: translateY(-176px); }
+  100% { transform: translateY(-100vh); }
+}
+@keyframes empreinte {
+  from { opacity: 0; transform: rotate(-9deg) scale(1.18); }
+  to { opacity: 1; transform: rotate(-9deg) scale(1); }
+}
+@keyframes secousse {
+  0%, 100% { transform: none; }
+  25% { transform: translate(-3px, 2px); }
+  50% { transform: translate(3px, -1px); }
+  75% { transform: translate(-1px, 1px); }
+}
+.coup-gouttes i { position: absolute; border-radius: 50%; background: #a51d17; opacity: 0; animation: goutte 0.3s var(--douce) 0.4s both; mix-blend-mode: multiply; }
+.coup-gouttes i:nth-child(1) { width: 10px; height: 10px; left: 14%; top: 22%; }
+.coup-gouttes i:nth-child(2) { width: 6px; height: 6px; right: 12%; top: 34%; animation-delay: 0.43s; }
+.coup-gouttes i:nth-child(3) { width: 7px; height: 7px; left: 22%; bottom: 14%; animation-delay: 0.45s; }
+.coup-gouttes i:nth-child(4) { width: 4px; height: 4px; right: 20%; bottom: 20%; animation-delay: 0.41s; }
+@keyframes goutte { from { opacity: 0; transform: scale(0.2); } to { opacity: 0.8; transform: none; } }
+.coup-texte { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; animation: apparait 0.4s var(--douce) 0.7s both; }
+.coup-boutons { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 6px; animation: apparait 0.4s var(--douce) 0.85s both; }
+.coup-boutons .lien-retour { color: #55524c; }
+@media (prefers-reduced-motion: reduce) { .coup-manche { display: none; } }

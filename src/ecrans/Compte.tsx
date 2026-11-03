@@ -7,11 +7,14 @@ import { activerNotifications, etatNotifications } from "../lib/push";
 import { appareil, installee } from "../lib/installation";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import { PorteAgence } from "../composants/PorteAgence";
+import { CoupsDeTampon } from "../composants/CoupDeTampon";
+import { useTampons } from "../lib/tampons";
 
 // Le compte : le nom sur la porte (modifiable), les chiffres de l'agence,
 // l'adresse de connexion, et ce qui concerne ce téléphone.
 export function Compte({ pseudo, onRenomme }: { pseudo: string; onRenomme: (pseudo: string) => void }) {
   const { accueil } = useAccueil(60_000);
+  const { tampons, nouveaux, marquerVus } = useTampons();
   const [email, setEmail] = useState<string | null>(null);
   const [edition, setEdition] = useState(false);
   const [nouveau, setNouveau] = useState("");
@@ -88,6 +91,14 @@ export function Compte({ pseudo, onRenomme }: { pseudo: string; onRenomme: (pseu
         </section>
       )}
 
+      <a href="#/tampons" className="reglage lien" style={{ borderTop: "1px solid var(--trait)" }}>
+        <span>
+          <span className="reglage-titre">Le passeport de l'agence</span>
+          <span className="petit">{tampons ? `${tampons.filter((t) => t.obtenu_at).length} tampon${tampons.filter((t) => t.obtenu_at).length > 1 ? "s" : ""} sur ${tampons.length}` : "Tes tampons de détective"}</span>
+        </span>
+        <span className="fleche">→</span>
+      </a>
+
       <section className="reglages">
         <span className="etiquette">Connexion</span>
         <div className="reglage">
@@ -152,6 +163,7 @@ export function Compte({ pseudo, onRenomme }: { pseudo: string; onRenomme: (pseu
         <button className="bouton discret" onClick={() => setQuitter(true)}>Se déconnecter</button>
       )}
 
+      {tampons && <CoupsDeTampon nouveaux={nouveaux} total={tampons.length} gagnes={tampons.filter((t) => t.obtenu_at).length} pseudo={pseudo} onVus={marquerVus} />}
       <OngletsAccueil actif="compte" demandes={accueil?.demandes_associes} />
     </main>
   );

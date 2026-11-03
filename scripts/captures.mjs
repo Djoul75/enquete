@@ -25,7 +25,7 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${LEA}'), ('${NOUVEAU}');
 `);
-for (const m of ["0001_agence.sql", "0002_compte.sql"]) await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
+for (const m of ["0001_agence.sql", "0002_compte.sql", "0003_tampons.sql"]) await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
 await db.exec(`insert into enquete_joueurs (user_id, pseudo, admin) values
   ('${JULES}', 'Jules', true), ('${JO}', 'Joséphine', false), ('${MARCO}', 'Marco', false), ('${LEA}', 'Léa', false);
   insert into enquete_amities (de, a, acceptee_at) values
@@ -184,6 +184,25 @@ await rpc("enquete_fouiller", { p_partie: partie, p_lieu: pub.lieux[1].id });
 const preuveMarco = (await rpc("enquete_etat", { p_partie: partie })).journal.find((e) => e.indice)?.indice.id;
 if (preuveMarco) await rpc("enquete_accuser", { p_partie: partie, p_suspect: secret.solution.coupable, p_mobile: pub.mobiles[1].id, p_preuve: preuveMarco });
 uid = JULES;
+// Les nouveaux tampons tombent sur la révélation, puis le passeport.
+await page.goto(SITE + `#/p/${partie}`);
+await page.reload();
+await page.waitForSelector(".coup-tampon");
+// Les animations figées à des instants choisis : le manche qui tombe, l'impact.
+for (const [t, nom] of [[250, "g0-manche"], [420, "g1-impact"]]) {
+  await page.evaluate((t) => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = t; }), t);
+  await page.screenshot({ path: `${SORTIE}/${nom}.png` });
+}
+await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
+await page.waitForTimeout(1200);
+await page.screenshot({ path: `${SORTIE}/g2-tampon-pose.png` });
+while (await page.locator("text=TAMPON SUIVANT").count()) {
+  await page.click("text=TAMPON SUIVANT");
+  await page.waitForTimeout(400);
+}
+await page.click("text=VOIR LE PASSEPORT");
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${SORTIE}/g3-passeport.png` });
 await capture("e1-revelation", `#/p/${partie}`);
 await page.click("text=PARTAGER MA UNE");
 await page.waitForTimeout(1500);

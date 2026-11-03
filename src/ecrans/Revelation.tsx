@@ -5,6 +5,8 @@ import { api } from "../lib/api";
 import { aller } from "../lib/routeur";
 import { mouvementReduit } from "../lib/effets";
 import { PartageUne } from "../composants/PartageUne";
+import { CoupsDeTampon } from "../composants/CoupDeTampon";
+import { useTampons } from "../lib/tampons";
 import type { DonneesCarte } from "../lib/carte";
 
 export function Revelation({ etat }: { etat: EtatPartie }) {
@@ -18,6 +20,7 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [partage, setPartage] = useState(false);
+  const { tampons, nouveaux, marquerVus } = useTampons();
   const moi = r.joueurs.find((j) => j.moi);
   const carte = useMemo<DonneesCarte | null>(() => {
     if (!moi) return null;
@@ -149,6 +152,10 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
         </div>
       </div>
       {partage && carte && <PartageUne donnees={carte} onFermer={() => setPartage(false)} />}
+      {tampons && moi && (
+        // Le tampon tombe une fois le journal posé.
+        <CoupsDeTampon nouveaux={nouveaux} total={tampons.length} gagnes={tampons.filter((t) => t.obtenu_at).length} pseudo={moi.nom} onVus={marquerVus} delai={tourne ? 1700 : 600} />
+      )}
     </main>
   );
 }

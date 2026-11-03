@@ -23,6 +23,7 @@ const charges = {
   regles: () => import("./ecrans/Regles"),
   tuto: () => import("./ecrans/Tuto"),
   installer: () => import("./ecrans/Installer"),
+  passeport: () => import("./ecrans/Passeport"),
 };
 const Partie = lazy(() => charges.partie().then((m) => ({ default: m.Partie })));
 const BureauRdv = lazy(() => charges.bureau().then((m) => ({ default: m.BureauRdv })));
@@ -30,6 +31,7 @@ const Preparer = lazy(() => charges.preparer().then((m) => ({ default: m.Prepare
 const Regles = lazy(() => charges.regles().then((m) => ({ default: m.Regles })));
 const Tuto = lazy(() => charges.tuto().then((m) => ({ default: m.Tuto })));
 const Installer = lazy(() => charges.installer().then((m) => ({ default: m.Installer })));
+const Passeport = lazy(() => charges.passeport().then((m) => ({ default: m.Passeport })));
 
 function precharger() {
   const tout = () => Object.values(charges).forEach((f) => f().catch(() => {}));
@@ -81,6 +83,7 @@ function Ecran() {
   }
   if (route.ecran === "tuto") return <Tuto pseudo={pseudo} />;
   if (route.ecran === "installer") return <Installer depuisCompte onContinuer={() => aller("/compte")} />;
+  if (route.ecran === "tampons") return <Passeport pseudo={pseudo} />;
   if (route.ecran === "compte") return <Compte pseudo={pseudo} onRenomme={retenir} />;
   if (route.ecran === "regles") return <Regles />;
   if (route.ecran === "associes") return <Associes />;

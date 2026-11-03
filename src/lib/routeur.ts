@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 //   #/tuto                  comment jouer, en pages à faire défiler
 //   #/regles                toutes les règles
 //   #/installer             ajouter le jeu à l'écran d'accueil
+//   #/tampons               le passeport de l'agence (les succès)
 //   #/p/12                  scène de crime de la partie 12
 //   #/p/12/suspect/ferrand  interrogatoire
 //   #/p/12/lieu/quai        un lieu, en plein écran
@@ -21,6 +22,7 @@ export type Route =
   | { ecran: "compte" }
   | { ecran: "tuto" }
   | { ecran: "installer" }
+  | { ecran: "tampons" }
   | { ecran: "preparer" }
   | { ecran: "bureau"; partie: number }
   | { ecran: "regles" }
@@ -38,6 +40,7 @@ function lire(): Route {
   if (morceaux[0] === "compte") return { ecran: "compte" };
   if (morceaux[0] === "tuto") return { ecran: "tuto" };
   if (morceaux[0] === "installer") return { ecran: "installer" };
+  if (morceaux[0] === "tampons") return { ecran: "tampons" };
   if (morceaux[0] === "preparer") return { ecran: "preparer" };
   if (morceaux[0] === "bureau" && morceaux[1]) return { ecran: "bureau", partie: Number(morceaux[1]) };
   if (morceaux[0] === "p" && morceaux[1]) {

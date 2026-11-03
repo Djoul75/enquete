@@ -4,6 +4,8 @@ import { useAccueil } from "../lib/accueil";
 import { aller, heuresRestantes, useMaintenant } from "../lib/routeur";
 import { activerNotifications, etatNotifications } from "../lib/push";
 import { appareil, installee } from "../lib/installation";
+import { useTampons } from "../lib/tampons";
+import { CoupsDeTampon } from "../composants/CoupDeTampon";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumeBureau, ResumePartie } from "../lib/types";
 
@@ -16,6 +18,7 @@ export function Dossiers() {
   const [occupe, setOccupe] = useState(false);
   const [notifs, setNotifs] = useState(etatNotifications());
   const maintenant = useMaintenant(30_000);
+  const { tampons, nouveaux, marquerVus } = useTampons();
 
   async function seul() {
     setOccupe(true);
@@ -148,6 +151,9 @@ export function Dossiers() {
         </button>
       )}
 
+      {tampons && (
+        <CoupsDeTampon nouveaux={nouveaux} total={tampons.length} gagnes={tampons.filter((t) => t.obtenu_at).length} pseudo={moi.pseudo} onVus={marquerVus} delai={400} />
+      )}
       <OngletsAccueil actif="dossiers" demandes={accueil.demandes_associes} />
     </main>
   );

@@ -19,7 +19,9 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${INCONNU}');
 `);
-await db.exec(readFileSync(new URL("../supabase/migrations/0001_agence.sql", import.meta.url), "utf8"));
+for (const m of ["0001_agence.sql", "0002_compte.sql"]) {
+  await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
+}
 
 const fichiers = process.argv[2]
   ? [process.argv[2]]
@@ -64,7 +66,7 @@ await en(MARCO, "select enquete_choisir_pseudo('Marco')");
 verifier(!(await en(INCONNU, "select enquete_pseudo_libre('JULES')")), "pseudo pris, majuscules ignorées");
 await doitEchouer(INCONNU, "select enquete_choisir_pseudo('jules')", [], "pas deux portes au même nom");
 await doitEchouer(INCONNU, "select enquete_choisir_pseudo('a b c')", [], "espaces refusés");
-await doitEchouer(JULES, "select enquete_choisir_pseudo('Autre')", [], "on ne renomme pas son agence");
+await doitEchouer(JULES, "select enquete_choisir_pseudo('Autre')", [], "choisir un nom ne sert qu'une fois");
 
 // --- Associés -------------------------------------------------------------
 verifier((await en(JULES, "select enquete_ajouter_associe('joséphine')")) === "demande", "Jules demande Joséphine");
@@ -78,6 +80,21 @@ await doitEchouer(JULES, "select enquete_ajouter_associe('Jules')", [], "pas soi
 assoc = await en(JULES, "select enquete_associes()");
 verifier(assoc.amis.map((a) => a.pseudo).join() === "Joséphine,Marco", "Jules a deux associés");
 await doitEchouer(JO, "select enquete_preparer(array['Marco'], null)", [], "on ne convoque que ses associés");
+
+// --- Compte et recherche --------------------------------------------------
+let trouves = await en(JO, "select enquete_chercher_agences('ma')");
+verifier(trouves.length === 1 && trouves[0].pseudo === "Marco" && trouves[0].lien === null, "Joséphine trouve Marco en tapant « ma »");
+trouves = await en(JULES, "select enquete_chercher_agences('o')");
+verifier(trouves.length === 0, "une seule lettre : pas de suggestion");
+trouves = await en(JULES, "select enquete_chercher_agences('rc')");
+verifier(trouves[0]?.lien === "associe", "le lien existant est indiqué");
+verifier((await en(JULES, "select enquete_chercher_agences('j_')")).length === 0, "le _ tapé n'est pas un joker");
+await doitEchouer(JULES, "select enquete_renommer('Marco')", [], "on ne prend pas le nom d'un autre");
+await en(JULES, "select enquete_renommer('JULES')");
+await en(JULES, "select enquete_renommer('Sherlock')");
+verifier((await en(JULES, "select enquete_moi()")).pseudo === "Sherlock", "Jules change le nom sur sa porte");
+verifier((await en(JO, "select enquete_associes()")).amis[0].pseudo === "Sherlock", "ses associés voient le nouveau nom");
+await en(JULES, "select enquete_renommer('Jules')");
 
 // --- Rendez-vous au bureau ------------------------------------------------
 const possibles = await en(JULES, "select enquete_dossiers_possibles(array['Joséphine','Marco'])");

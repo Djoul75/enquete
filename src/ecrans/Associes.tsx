@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import { useAccueil } from "../lib/accueil";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import { PorteAgence } from "../composants/PorteAgence";
-import type { Associes as Donnees } from "../lib/types";
+import type { Agence, Associes as Donnees } from "../lib/types";
 
 let dernier: Donnees | null = null;
 
@@ -14,6 +14,8 @@ export function Associes() {
   const [message, setMessage] = useState<{ texte: string; erreur?: boolean } | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [aRetirer, setARetirer] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<{ pour: string; agences: Agence[] } | null>(null);
+  const recherche = pseudo.trim();
 
   const charger = useCallback(() => {
     api.associes().then((d) => {
@@ -28,6 +30,19 @@ export function Associes() {
     return () => window.clearInterval(id);
   }, [charger]);
 
+  // Suggestions pendant la frappe, à partir de deux lettres.
+  const chercher = useCallback((texte: string) => {
+    api.chercherAgences(texte).then((agences) => setSuggestions({ pour: texte, agences })).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (recherche.length < 2) return;
+    const id = window.setTimeout(() => chercher(recherche), 180);
+    return () => window.clearTimeout(id);
+  }, [recherche, chercher]);
+
+  const proposees = recherche.length >= 2 && suggestions?.pour === recherche ? suggestions.agences : null;
+
   async function agir(action: () => Promise<unknown>, succes?: string) {
     setOccupe(true);
     setMessage(null);
@@ -35,15 +50,15 @@ export function Associes() {
       await action();
       if (succes) setMessage({ texte: succes });
       charger();
+      if (recherche.length >= 2) chercher(recherche);
     } catch (e) {
       setMessage({ texte: (e as Error).message, erreur: true });
     }
     setOccupe(false);
   }
 
-  async function ajouter(e: React.FormEvent) {
-    e.preventDefault();
-    const nom = pseudo.trim();
+  async function ajouter(e: React.FormEvent | null, nom = recherche) {
+    e?.preventDefault();
     if (!nom) return;
     setOccupe(true);
     setMessage(null);
@@ -77,7 +92,9 @@ export function Associes() {
         <div style={{ display: "flex", gap: 8 }}>
           <input
             id="associe"
-            placeholder="Son nom d'agence, exact"
+            type="search"
+            enterKeyHint="send"
+            placeholder="Le nom de son agence"
             autoCapitalize="words"
             autoComplete="off"
             spellCheck={false}
@@ -86,6 +103,28 @@ export function Associes() {
           />
           <button className="bouton plein" disabled={occupe || !pseudo.trim()} style={{ flexShrink: 0 }}>Ajouter</button>
         </div>
+        {proposees && (
+          <div className="suggestions" role="listbox" aria-label="Agences trouvées">
+            {proposees.length === 0 && <span className="petit" style={{ padding: "10px 12px" }}>Aucune agence à ce nom pour l'instant.</span>}
+            {proposees.map((a) => (
+              <div key={a.pseudo} className="suggestion" role="option" aria-selected={false}>
+                <span className="qui">
+                  <span className="initiale">{a.pseudo[0].toUpperCase()}</span>
+                  <span className="titre nom"><Surligne texte={a.pseudo} motif={recherche} /></span>
+                </span>
+                {a.lien === "associe" ? (
+                  <span className="machine vert" style={{ fontSize: 11 }}>ASSOCIÉ ✓</span>
+                ) : a.lien === "envoyee" ? (
+                  <span className="machine" style={{ fontSize: 11, color: "var(--gris)" }}>DEMANDÉ</span>
+                ) : a.lien === "recue" ? (
+                  <button type="button" className="bouton plein" disabled={occupe} onClick={() => agir(() => api.repondreAssocie(a.pseudo, true), `${a.pseudo} est ton associé.`)}>Accepter</button>
+                ) : (
+                  <button type="button" className="bouton" disabled={occupe} onClick={() => ajouter(null, a.pseudo)}>Ajouter</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         {message && <p className={message.erreur ? "erreur" : "petit"} style={message.erreur ? undefined : { margin: 0, color: "var(--gris-clair)" }}>{message.texte}</p>}
       </form>
 
@@ -146,6 +185,19 @@ export function Associes() {
 
       <OngletsAccueil actif="associes" demandes={donnees?.recues.length ?? accueil?.demandes_associes} />
     </main>
+  );
+}
+
+// Met en valeur la partie du nom qui correspond à ce qui est tapé.
+function Surligne({ texte, motif }: { texte: string; motif: string }) {
+  const i = texte.toLowerCase().indexOf(motif.toLowerCase());
+  if (i < 0) return <>{texte.toUpperCase()}</>;
+  return (
+    <>
+      {texte.slice(0, i).toUpperCase()}
+      <span className="rouge">{texte.slice(i, i + motif.length).toUpperCase()}</span>
+      {texte.slice(i + motif.length).toUpperCase()}
+    </>
   );
 }
 

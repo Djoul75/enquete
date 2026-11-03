@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { api } from "../lib/api";
-import { supabase } from "../lib/supabase";
 import { useAccueil } from "../lib/accueil";
 import { aller, heuresRestantes, useMaintenant } from "../lib/routeur";
 import { activerNotifications, etatNotifications } from "../lib/push";
+import { appareil, installee } from "../lib/installation";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumeBureau, ResumePartie } from "../lib/types";
 
@@ -53,7 +53,7 @@ export function Dossiers() {
   return (
     <main className="ecran pluie">
       <div className="machine" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12, color: "var(--gris-clair)" }}>
-        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>AGENCE {moi.pseudo.toUpperCase()}</span>
+        <a href="#/compte" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}>AGENCE {moi.pseudo.toUpperCase()}</a>
         <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <span className="compteur-archive">{moi.resolues} RÉSOLUE{moi.resolues > 1 ? "S" : ""}</span>
           <span className="compteur-archive" style={{ color: "var(--gris)" }}>
@@ -114,21 +114,25 @@ export function Dossiers() {
 
       {erreur && <p className="erreur">{erreur}</p>}
 
-      <footer style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }} className="petit">
-        <a href="#/regles" className="lien-retour" style={{ fontSize: 12, color: "var(--papier)", textDecoration: "underline" }}>Comment on joue ?</a>
-        {notifs === "active" ? (
-          <span style={{ color: "var(--gris-clair)" }}>Notifications ✓</span>
-        ) : notifs === "indisponible" ? (
-          <span style={{ color: "var(--gris-clair)", textAlign: "center" }}>Ajoute à l'écran d'accueil pour les notifications</span>
-        ) : (
-          <button className="lien-retour" style={{ fontSize: 12, color: "var(--rouge-texte)", textDecoration: "underline" }} onClick={async () => setNotifs(await activerNotifications())}>
-            Activer les notifications
-          </button>
-        )}
-        <button className="lien-retour" style={{ fontSize: 12, color: "var(--gris)" }} onClick={() => supabase.auth.signOut()}>
-          Quitter
+      <a href="#/tuto" className="bouton comment-jouer">
+        <span className="titre rouge" style={{ fontSize: 26 }}>?</span>
+        <span style={{ flex: 1 }}>
+          <span className="titre" style={{ fontSize: 22, display: "block" }}>COMMENT JOUER</span>
+          <span className="petit">Le tuto, à revoir quand tu veux</span>
+        </span>
+        <span className="titre rouge" style={{ fontSize: 22 }}>→</span>
+      </a>
+
+      {notifs === "indisponible" && appareil() !== "ordi" && !installee() && (
+        <a href="#/installer" className="lien-retour petit" style={{ fontSize: 12, color: "var(--rouge-texte)", textDecoration: "underline", alignSelf: "center" }}>
+          Installer le jeu pour recevoir les notifications
+        </a>
+      )}
+      {notifs === "inactive" && (
+        <button className="lien-retour petit" style={{ fontSize: 12, color: "var(--rouge-texte)", textDecoration: "underline", alignSelf: "center" }} onClick={async () => setNotifs(await activerNotifications())}>
+          Activer les notifications
         </button>
-      </footer>
+      )}
 
       <OngletsAccueil actif="dossiers" demandes={accueil.demandes_associes} />
     </main>

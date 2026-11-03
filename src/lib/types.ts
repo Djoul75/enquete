@@ -139,6 +139,9 @@ export type Associes = {
   envoyees: string[];
 };
 
+// Suggestion pendant la recherche d'un associé, avec le lien qu'on a déjà.
+export type Agence = { pseudo: string; lien: "associe" | "envoyee" | "recue" | null };
+
 export type DossierPossible = { id: number; titre: string; cadre: AffairePublic["cadre"] };
 
 export type Bureau = {

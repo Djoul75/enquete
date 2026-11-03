@@ -25,7 +25,7 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${LEA}'), ('${NOUVEAU}');
 `);
-await db.exec(readFileSync(new URL("../supabase/migrations/0001_agence.sql", import.meta.url), "utf8"));
+for (const m of ["0001_agence.sql", "0002_compte.sql"]) await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
 await db.exec(`insert into enquete_joueurs (user_id, pseudo, admin) values
   ('${JULES}', 'Jules', true), ('${JO}', 'Joséphine', false), ('${MARCO}', 'Marco', false), ('${LEA}', 'Léa', false);
   insert into enquete_amities (de, a, acceptee_at) values

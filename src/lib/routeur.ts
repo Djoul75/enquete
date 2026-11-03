@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 // Routage par le « # » de l'URL : GitHub Pages ne sert qu'un index.html,
 // donc pas de chemins réels. Routes :
 //   #/                      dossiers
-//   #/associes | archives   les autres onglets de l'accueil
+//   #/associes | archives | compte   les autres onglets de l'accueil
 //   #/preparer              préparer un rendez-vous à plusieurs
 //   #/bureau/12             le rendez-vous 12, avant l'ouverture du dossier
-//   #/regles                comment on joue
+//   #/tuto                  comment jouer, en pages à faire défiler
+//   #/regles                toutes les règles
+//   #/installer             ajouter le jeu à l'écran d'accueil
 //   #/p/12                  scène de crime de la partie 12
 //   #/p/12/suspect/ferrand  interrogatoire
 //   #/p/12/lieu/quai        un lieu, en plein écran
@@ -16,6 +18,9 @@ export type Route =
   | { ecran: "dossiers" }
   | { ecran: "associes" }
   | { ecran: "archives" }
+  | { ecran: "compte" }
+  | { ecran: "tuto" }
+  | { ecran: "installer" }
   | { ecran: "preparer" }
   | { ecran: "bureau"; partie: number }
   | { ecran: "regles" }
@@ -30,6 +35,9 @@ function lire(): Route {
   if (morceaux[0] === "regles") return { ecran: "regles" };
   if (morceaux[0] === "associes") return { ecran: "associes" };
   if (morceaux[0] === "archives") return { ecran: "archives" };
+  if (morceaux[0] === "compte") return { ecran: "compte" };
+  if (morceaux[0] === "tuto") return { ecran: "tuto" };
+  if (morceaux[0] === "installer") return { ecran: "installer" };
   if (morceaux[0] === "preparer") return { ecran: "preparer" };
   if (morceaux[0] === "bureau" && morceaux[1]) return { ecran: "bureau", partie: Number(morceaux[1]) };
   if (morceaux[0] === "p" && morceaux[1]) {

@@ -2,6 +2,7 @@ const ONGLETS = [
   { cle: "dossiers", nom: "DOSSIERS", href: "#/" },
   { cle: "associes", nom: "ASSOCIÉS", href: "#/associes" },
   { cle: "archives", nom: "ARCHIVES", href: "#/archives" },
+  { cle: "compte", nom: "COMPTE", href: "#/compte" },
 ] as const;
 
 export function OngletsAccueil({ actif, demandes = 0 }: { actif: (typeof ONGLETS)[number]["cle"]; demandes?: number }) {

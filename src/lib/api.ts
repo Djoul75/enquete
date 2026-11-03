@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Accueil, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
+import type { Accueil, Agence, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
 
 async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
@@ -11,6 +11,8 @@ export const api = {
   moi: () => rpc<Moi>("enquete_moi"),
   pseudoLibre: (pseudo: string) => rpc<boolean>("enquete_pseudo_libre", { p_pseudo: pseudo }),
   choisirPseudo: (pseudo: string) => rpc<void>("enquete_choisir_pseudo", { p_pseudo: pseudo }),
+  renommer: (pseudo: string) => rpc<void>("enquete_renommer", { p_pseudo: pseudo }),
+  chercherAgences: (debut: string) => rpc<Agence[]>("enquete_chercher_agences", { p_debut: debut }),
 
   associes: () => rpc<Associes>("enquete_associes"),
   ajouterAssocie: (pseudo: string) => rpc<"demande" | "associes" | "deja">("enquete_ajouter_associe", { p_pseudo: pseudo }),

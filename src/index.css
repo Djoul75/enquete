@@ -32,6 +32,20 @@ body {
 
 #root { min-height: 100dvh; }
 
+/* Bande noire pleine sous l'heure et la batterie de l'iPhone : le contenu
+   qui défile passe dessous au lieu de se mêler à la barre d'état. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: var(--encre);
+  z-index: 45;
+  pointer-events: none;
+}
+
 button { font: inherit; color: inherit; }
 a { color: inherit; }
 
@@ -175,9 +189,7 @@ a { color: inherit; }
   z-index: 20;
   margin: 0 -16px;
   padding-top: env(safe-area-inset-top);
-  background: rgba(11, 11, 11, 0.92);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--encre);
   border-bottom: 1px solid transparent;
   transition: border-color 0.3s;
 }
@@ -750,8 +762,8 @@ textarea:focus, input:focus { outline: 1px solid var(--papier); outline-offset: 
 .dore-petit { font-family: var(--machine); color: #b39558; font-size: 10px; letter-spacing: 2px; }
 .dore-petit.sous-titre { font-size: 9px; opacity: 0.8; margin-top: 4px; }
 
-.onglets.onglets-accueil { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.onglets-accueil a { padding: 14px 0 16px; letter-spacing: 1px; }
+.onglets.onglets-accueil { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.onglets-accueil a { padding: 14px 0 16px; letter-spacing: 0.5px; }
 .onglets-accueil a.actif { box-shadow: inset 0 2px 0 var(--rouge); }
 .pastille-compte { position: absolute; top: -9px; right: -16px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--rouge); color: var(--papier); font-family: var(--texte); font-size: 10px; font-weight: 700; display: grid; place-items: center; }
 
@@ -803,3 +815,83 @@ textarea:focus, input:focus { outline: 1px solid var(--papier); outline-offset: 
 }
 .caviarde { display: flex; gap: 8px; padding: 6px 0 4px; }
 .caviarde i { display: block; height: 26px; background: #2b2210; }
+
+/* ---------- Compte ---------- */
+
+.chiffres-agence { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--trait-fort); }
+.chiffres-agence > span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px 10px; }
+.chiffres-agence > span + span { border-left: 1px solid var(--trait-fort); }
+.chiffres-agence b { font-size: 40px; line-height: 1; animation: apparait 0.5s var(--douce) both; }
+.chiffres-agence .etiquette { font-size: 11px; }
+.reglages { display: flex; flex-direction: column; }
+.reglage { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; min-height: 60px; border-bottom: 1px solid var(--trait); text-decoration: none; }
+.reglages .etiquette + .reglage { border-top: 1px solid var(--trait); margin-top: 6px; }
+.reglage > span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.reglage-titre { font-family: var(--titre); font-size: 22px; line-height: 1; letter-spacing: 0.5px; }
+.reglage.lien:active { background: var(--carte); }
+.reglage .fleche { font-family: var(--titre); font-size: 22px; color: var(--rouge); }
+
+.comment-jouer { display: flex; align-items: center; gap: 12px; border-color: var(--trait-fort); text-decoration: none; padding: 10px 14px; }
+
+/* ---------- Associés : suggestions pendant la frappe ---------- */
+
+.suggestions { border: 1px solid var(--trait-fort); border-top: none; margin-top: -8px; display: flex; flex-direction: column; animation: apparait 0.25s var(--douce) both; }
+.suggestion { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px 8px 12px; min-height: 54px; }
+.suggestion + .suggestion { border-top: 1px solid var(--trait); }
+.suggestion .bouton { padding: 8px 12px; min-height: 36px; }
+input[type="search"]::-webkit-search-cancel-button { display: none; }
+
+/* ---------- Installer sur l'écran d'accueil ---------- */
+
+.segmente { position: relative; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--trait-fort); }
+.segmente button { position: relative; z-index: 1; appearance: none; background: none; border: 0; padding: 11px 0 9px; font-size: 13px; color: var(--gris); cursor: pointer; transition: color 0.3s; }
+.segmente button.actif { color: var(--encre); }
+.segmente-pastille { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: var(--papier); transition: transform 0.45s var(--ressort); }
+.etapes-installer { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.etapes-installer li { display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-areas: "n img" "n txt"; gap: 8px 10px; }
+.etapes-installer .numero { grid-area: n; font-size: 44px; text-align: center; }
+.etapes-installer .illustration { grid-area: img; }
+.etapes-installer .illustration svg { display: block; width: 100%; height: auto; }
+.etapes-installer .legende { grid-area: txt; font-size: 14px; color: var(--gris-clair); }
+.etapes-installer b { color: var(--papier); }
+.appui-onde { transform-box: fill-box; transform-origin: center; animation: appui-onde 1.6s var(--douce) infinite; }
+@keyframes appui-onde { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2); opacity: 0; } }
+.icone-arrive { transform-box: fill-box; transform-origin: center; animation: icone-arrive 2.4s var(--ressort) infinite; }
+@keyframes icone-arrive { 0%, 15% { transform: scale(0); opacity: 0; } 40%, 100% { transform: none; opacity: 1; } }
+
+/* ---------- Tuto « Comment jouer » ---------- */
+
+.ecran.tuto { gap: 14px; overflow-x: hidden; touch-action: pan-y; }
+.tuto-haut { display: flex; align-items: center; gap: 12px; }
+.tuto-progression { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.tuto-progression button { appearance: none; border: 0; padding: 10px 0; background: none; cursor: pointer; position: relative; }
+.tuto-progression button::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1.5px; background: var(--trait-fort); transition: background 0.35s var(--douce); }
+.tuto-progression button.fait::after { background: var(--rouge); }
+.tuto-page { display: flex; flex-direction: column; justify-content: center; gap: 10px; flex: 1; }
+.tuto-droite { animation: entree-droite 0.45s var(--douce) both; }
+.tuto-gauche { animation: entree-gauche 0.45s var(--douce) both; }
+.tuto-dessin { min-height: 260px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 8px; }
+.tuto-texte { margin: 0; font-size: 16px; color: var(--gris-clair); }
+.tuto-texte b { color: var(--papier); }
+.tuto-bas { display: flex; gap: 8px; align-items: stretch; }
+.tuto-bas .bouton { padding: 0 18px; font-family: var(--titre); font-size: 26px; }
+
+.tuto-scene { position: relative; margin: 0 -16px; }
+.tuto-scene svg { display: block; width: 100%; height: 220px; }
+.tuto-scene p { position: absolute; left: 16px; right: 16px; bottom: 0; margin: 0; padding: 30px 0 4px; font-size: 15px; background: linear-gradient(transparent, var(--encre) 60%); }
+.tuto-suspects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.tuto-suspects > span { border: 1px solid var(--trait-fort); filter: grayscale(0.4) brightness(0.7); transition: filter 0.3s; }
+.tuto-suspects > span.choisi { border-color: var(--rouge); filter: none; transform: translateY(-8px); animation: apparait 0.5s var(--douce) both; }
+.tuto-suspects .bulle { grid-column: 1 / -1; margin: 6px 0 0; padding: 10px 12px; background: var(--papier); color: var(--encre); font-size: 14px; position: relative; animation: apparait 0.45s var(--douce) 0.35s both; }
+.tuto-suspects .bulle::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--papier); }
+.tuto-fouille { position: relative; margin: 0 -16px; }
+.tuto-fouille svg { display: block; width: 100%; height: 220px; }
+.tuto-fouille > span { position: absolute; right: 16px; bottom: 12px; font-size: 13px; background: var(--encre); padding: 6px 10px; border: 1px solid var(--trait-fort); }
+.tuto-fouille b { color: var(--rouge); margin-left: 6px; font-size: 14px; }
+.tuto-mur { background: var(--carte); margin: 0 -16px; padding: 22px 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
+.tuto-mur .note-mur:nth-child(2) { margin-top: 22px; }
+.tuto-mur .note-mur:nth-child(3) { grid-column: 1 / -1; width: 70%; justify-self: center; }
+.tuto-rapport { transform: rotate(-1.5deg); padding: 16px; gap: 4px; }
+.ligne-rapport { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0 4px; border-bottom: 1px dashed #8a867e; font-size: 30px; animation: apparait 0.45s var(--douce) both; }
+.ligne-rapport .titre { font-size: 30px; }
+.tuto-bureau { display: flex; flex-direction: column; }

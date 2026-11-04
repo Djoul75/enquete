@@ -12,7 +12,7 @@ const JETON = process.env.SUPABASE_ACCESS_TOKEN;
 const GMAIL = process.env.GMAIL_APP_PASSWORD;
 if (!JETON || !GMAIL) throw new Error("Lance d'abord ~/cles (jeton Supabase et mot de passe Gmail).");
 
-const SITE = "https://djoul75.github.io/enquete/";
+const SITE = "https://agencenoire.fr/";
 const EXPEDITEUR = "jules.gorce@gmail.com";
 
 async function api(chemin, options = {}) {

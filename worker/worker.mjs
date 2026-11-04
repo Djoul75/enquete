@@ -17,7 +17,7 @@ import { ecrireAffaire } from "./ecrivain.mjs";
 config({ path: "/home/ubuntu/enquete/.env", quiet: true });
 config({ path: "/home/ubuntu/plateforme-perso/.env.local", quiet: true });
 
-const SITE = "https://djoul75.github.io/enquete/";
+const SITE = "https://agencenoire.fr/";
 const db = createClient(process.env.ENQUETE_SUPABASE_URL, process.env.ENQUETE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });

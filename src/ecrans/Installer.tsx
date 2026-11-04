@@ -132,7 +132,7 @@ const ETAPES_IPHONE: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
     dessin: (
       <Cadre>
         <rect x="14" y="20" width="196" height="38" rx="19" fill="#24231f" />
-        <Texte x={112} y={43} c={G} ancre="middle">djoul75.github.io</Texte>
+        <Texte x={112} y={43} c={G} ancre="middle">agencenoire.fr</Texte>
         <circle cx="234" cy="39" r="19" fill="#24231f" />
         <Texte x={234} y={43} ancre="middle" taille={14}>•••</Texte>
         <Appui x={234} y={39} />
@@ -178,7 +178,7 @@ const ETAPES_ANDROID: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
     dessin: (
       <Cadre>
         <rect x="14" y="20" width="196" height="38" rx="19" fill="#24231f" />
-        <Texte x={112} y={43} c={G} ancre="middle">djoul75.github.io</Texte>
+        <Texte x={112} y={43} c={G} ancre="middle">agencenoire.fr</Texte>
         <g fill={P}>
           <circle cx="234" cy="31" r="2" />
           <circle cx="234" cy="39" r="2" />
@@ -206,7 +206,7 @@ const ETAPES_ANDROID: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
     dessin: (
       <Cadre>
         <Texte x={16} y={30}>Installer l'application ?</Texte>
-        <Texte x={16} y={48} c={G} taille={11}>Agence Noire · djoul75.github.io</Texte>
+        <Texte x={16} y={48} c={G} taille={11}>Agence Noire · agencenoire.fr</Texte>
         <Texte x={150} y={66} c="#8ab4f8" ancre="end">Annuler</Texte>
         <Texte x={236} y={66} c="#8ab4f8" ancre="end">Installer</Texte>
         <Appui x={213} y={62} largeur={60} />

@@ -22,6 +22,15 @@
     <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./demarrage/750x1334.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Agence Noire</title>
+    <script>
+      // Ancienne adresse (djoul75.github.io/enquete) : l'ancien service worker
+      // peut encore servir cette page ; on le retire et on part sur le domaine.
+      if (location.hostname !== "agencenoire.fr" && location.hostname.endsWith("github.io")) {
+        Promise.resolve(navigator.serviceWorker && navigator.serviceWorker.getRegistrations())
+          .then((rs) => Promise.all((rs || []).map((r) => r.unregister())))
+          .finally(() => location.replace("https://agencenoire.fr/"));
+      }
+    </script>
   </head>
   <body class="grain">
     <div id="root"></div>

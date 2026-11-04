@@ -27,7 +27,7 @@ const ROUGE = "#a51d17";
 const TITRE = '"Bebas Neue", sans-serif';
 const MACHINE = '"Special Elite", monospace';
 const TEXTE = '"Courier Prime", monospace';
-const SITE = "DJOUL75.GITHUB.IO/ENQUETE";
+const SITE = "AGENCENOIRE.FR";
 
 export function verdict(d: DonneesCarte): string {
   if (d.coupable === null) return "ARRIVE TROP TARD";
@@ -207,7 +207,7 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
 // Partage natif (iPhone, Android) avec l'image ; sinon, téléchargement.
 export async function partagerCarte(blob: Blob, d: DonneesCarte): Promise<"partage" | "telecharge" | "annule"> {
   const fichier = new File([blob], `agence-noire-${d.partie}.png`, { type: "image/png" });
-  const texte = `${d.titre} : ${d.score} points. À ton tour, privé : https://djoul75.github.io/enquete/`;
+  const texte = `${d.titre} : ${d.score} points. À ton tour, privé : https://agencenoire.fr/`;
   if (navigator.canShare?.({ files: [fichier] })) {
     try {
       await navigator.share({ files: [fichier], text: texte });

@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 
 const { chromium } = createRequire("/home/ubuntu/shots-tool/package.json")("playwright");
 const SORTIE = process.argv[2] ?? "captures";
-const SITE = "http://127.0.0.1:4173/enquete/";
+const SITE = "http://127.0.0.1:4173/";
 mkdirSync(SORTIE, { recursive: true });
 
 const JULES = "11111111-1111-1111-1111-111111111111";

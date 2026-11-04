@@ -15,6 +15,8 @@ ajouter "enquete/scripts/worker.sh" \
   "# Enquête : affaires demandées, clôtures et notifications (chaque minute), affaire de la semaine (lundi 7 h)" \
   "* * * * * /home/ubuntu/enquete/scripts/worker.sh" \
   "0 7 * * 1 /home/ubuntu/enquete/scripts/worker.sh hebdo"
-ajouter "enquete/scripts/sauvegarde.mjs" \
+ajouter "node scripts/sauvegarde.mjs" \
   "# Enquête : sauvegarde de la base du jeu chaque nuit (30 jours gardés)" \
   "30 3 * * * cd /home/ubuntu/enquete && node scripts/sauvegarde.mjs >> /home/ubuntu/enquete-sauvegarde.log 2>&1"
+# Retire les lignes en double laissées par une ancienne version de ce script.
+crontab -l | awk '$0 == "" || !vu[$0]++' | crontab -

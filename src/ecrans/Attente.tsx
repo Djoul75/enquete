@@ -23,7 +23,7 @@ export function Attente({ etat }: { etat: EtatPartie }) {
   const partie = etat.partie.id;
 
   return (
-    <main className="ecran pluie">
+    <main className="ecran">
       <a href="#/" className="lien-retour">← DOSSIERS</a>
       <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)", marginTop: -8 }}>{etat.affaire.titre.toUpperCase()}</span>
       <h1 className="titre apparait" style={{ fontSize: 64 }}>

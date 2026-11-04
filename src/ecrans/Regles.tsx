@@ -1,7 +1,7 @@
 // « Comment on joue ? », depuis l'accueil.
 export function Regles() {
   return (
-    <main className="ecran pluie">
+    <main className="ecran">
       <a href="#/" className="lien-retour">← DOSSIERS</a>
       <h1 className="titre apparait" style={{ fontSize: 64 }}>
         COMMENT

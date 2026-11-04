@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
+import rue from "./rue.html?raw";
+import "./rue.css";
 
-// L'enseigne au néon à l'ouverture de l'app installée (maquette B validée).
+// La rue de l'agence à l'ouverture de l'app installée (maquette C bis validée).
 // Elle prend le relais de l'image de lancement de l'iPhone, identique mais
-// figée avec le T éteint : le T grésille, s'allume, et l'enseigne s'efface
-// sur l'accueil, déjà prêt dessous. Un toucher la fait partir tout de suite.
-const DUREE = 1100;
+// figée avec le O éteint : le O grésille, s'allume, et la rue s'efface sur
+// l'accueil, déjà prêt dessous. Un toucher la fait partir tout de suite.
+const DUREE = 1300;
+
+// Le décor est dessiné sur 390 × 844 : il couvre un téléphone, il tient en
+// entier sur un écran plus large.
+function echelle() {
+  const l = window.innerWidth / 390;
+  const h = window.innerHeight / 844;
+  return window.innerWidth / window.innerHeight > 0.7 ? Math.min(l, h) : Math.max(l, h);
+}
 
 export function Demarrage({ onFini }: { onFini: () => void }) {
   const [sortie, setSortie] = useState(false);
@@ -19,17 +29,9 @@ export function Demarrage({ onFini }: { onFini: () => void }) {
   }, [onFini]);
 
   return (
-    <div className={`demarrage pluie${sortie ? " sortie" : ""}`} onClick={onFini} aria-hidden="true">
-      <div className="enseigne">
-        <span className="titre enseigne-mot">
-          <span className="allume">ENQUÊ</span>
-          <span className="t-neon">T</span>
-          <span className="allume">E</span>
-        </span>
-        <span className="machine allume enseigne-sous">· OUVERT LA NUIT ·</span>
-      </div>
-      <div className="flaque" />
-      <span className="machine enseigne-pied">AGENCE DE DÉTECTIVES PRIVÉS</span>
+    <div className={`demarrage${sortie ? " sortie" : ""}`} onClick={onFini} aria-hidden="true">
+      <div className="rue" style={{ "--echelle": echelle() } as React.CSSProperties} dangerouslySetInnerHTML={{ __html: rue }} />
+      <span className="rue-pied">DÉTECTIVES PRIVÉS · 2<sup>E</sup> ÉTAGE</span>
     </div>
   );
 }

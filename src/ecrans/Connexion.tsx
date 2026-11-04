@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Logo } from "../composants/Logo";
 import { supabase } from "../lib/supabase";
 
 // Pas de mot de passe : un code à 6 chiffres reçu par mail. Il se tape dans
@@ -88,11 +89,9 @@ export function Connexion() {
   }
 
   return (
-    <main className="ecran pluie" style={{ justifyContent: "center" }}>
-      <span className="etiquette">Agence de détectives privés</span>
-      <h1 className="titre" style={{ fontSize: 96 }}>
-        ENQUÊ<span className="rouge">T</span>E
-      </h1>
+    <main className="ecran" style={{ justifyContent: "center" }}>
+      <span className="etiquette">Détectives privés</span>
+      <Logo taille={92} lignes={2} />
       <p style={{ margin: 0, color: "var(--gris-clair)", fontSize: 14 }}>
         Des meurtres, des menteurs, et d'autres privés sur la même affaire que toi.
       </p>

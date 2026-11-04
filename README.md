@@ -1,4 +1,6 @@
-# Enquête
+# Agence Noire
+
+Anciennement « Enquête ».
 
 Jeu d'enquête policière façon film noir, en solo ou en duel asynchrone.
 Site statique (Vite + React) publié sur GitHub Pages, données dans Supabase.

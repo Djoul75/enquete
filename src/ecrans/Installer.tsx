@@ -21,7 +21,7 @@ export function Installer({ onContinuer, depuisCompte }: { onContinuer: () => vo
   const etapes = version === "iphone" ? ETAPES_IPHONE : ETAPES_ANDROID;
 
   return (
-    <main className="ecran pluie installer">
+    <main className="ecran installer">
       {depuisCompte && <a href="#/compte" className="lien-retour">← COMPTE</a>}
       <span className="etiquette apparait">Avant d'ouvrir l'agence</span>
       <h1 className="titre apparait" style={{ fontSize: 60 }}>
@@ -42,10 +42,10 @@ export function Installer({ onContinuer, depuisCompte }: { onContinuer: () => vo
 
       {version === "android" && proposable && !installe && (
         <button className="gros-bouton papier-fond apparait" onClick={async () => setInstalle(await installer())}>
-          INSTALLER ENQUÊTE
+          INSTALLER AGENCE NOIRE
         </button>
       )}
-      {installe && <p className="machine vert apparait" style={{ margin: 0 }}>INSTALLÉ. OUVRE ENQUÊTE DEPUIS TON ÉCRAN D'ACCUEIL.</p>}
+      {installe && <p className="machine vert apparait" style={{ margin: 0 }}>INSTALLÉ. OUVRE AGENCE NOIRE DEPUIS TON ÉCRAN D'ACCUEIL.</p>}
 
       <ol key={version} className="etapes-installer">
         {etapes.map((e, i) => (
@@ -120,7 +120,7 @@ function EcranAccueil() {
       ))}
       <g className="icone-arrive">
         <image href={`${import.meta.env.BASE_URL}icone-180.png`} x="206" y="14" width="34" height="34" style={{ clipPath: "inset(0 round 9px)" }} />
-        <Texte x={223} y={62} taille={9} ancre="middle">Enquête</Texte>
+        <Texte x={223} y={62} taille={9} ancre="middle">Agence Noire</Texte>
       </g>
       <Appui x={223} y={31} />
     </svg>
@@ -169,7 +169,7 @@ const ETAPES_IPHONE: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
   },
   {
     dessin: <EcranAccueil />,
-    texte: <>Ouvre <b>Enquête</b> depuis ton écran d'accueil, puis autorise les notifications.</>,
+    texte: <>Ouvre <b>Agence Noire</b> depuis ton écran d'accueil, puis autorise les notifications.</>,
   },
 ];
 
@@ -206,7 +206,7 @@ const ETAPES_ANDROID: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
     dessin: (
       <Cadre>
         <Texte x={16} y={30}>Installer l'application ?</Texte>
-        <Texte x={16} y={48} c={G} taille={11}>Enquête · djoul75.github.io</Texte>
+        <Texte x={16} y={48} c={G} taille={11}>Agence Noire · djoul75.github.io</Texte>
         <Texte x={150} y={66} c="#8ab4f8" ancre="end">Annuler</Texte>
         <Texte x={236} y={66} c="#8ab4f8" ancre="end">Installer</Texte>
         <Appui x={213} y={62} largeur={60} />
@@ -216,6 +216,6 @@ const ETAPES_ANDROID: { dessin: React.ReactNode; texte: React.ReactNode }[] = [
   },
   {
     dessin: <EcranAccueil />,
-    texte: <>Ouvre <b>Enquête</b> depuis ton écran d'accueil, puis autorise les notifications.</>,
+    texte: <>Ouvre <b>Agence Noire</b> depuis ton écran d'accueil, puis autorise les notifications.</>,
   },
 ];

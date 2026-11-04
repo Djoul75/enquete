@@ -7,7 +7,7 @@ export function Archives() {
   const archives = accueil?.parties.filter((p) => p.revelee) ?? [];
 
   return (
-    <main className="ecran pluie">
+    <main className="ecran">
       <span className="etiquette">Agence {accueil?.moi.pseudo ?? ""}</span>
       <h1 className="titre" style={{ fontSize: 64 }}>ARCHIVES</h1>
       {accueil?.moi.record != null && (

@@ -7,7 +7,7 @@ import { aplatir, deplier, SCHEMA_PLAT, verifier } from "./affaire.mjs";
 
 const EXEMPLE = aplatir(JSON.parse(readFileSync(new URL("../affaires/01-vieux-port.json", import.meta.url), "utf8")));
 
-const CONSIGNES = `Tu écris des affaires pour « Enquête », un jeu d'enquête policière sur téléphone, en français, dans l'ambiance des films noirs et des vieux polars (Sin City, Melville, Simenon, Chandler).
+const CONSIGNES = `Tu écris des affaires pour « Agence Noire », un jeu d'enquête policière sur téléphone, en français, dans l'ambiance des films noirs et des vieux polars (Sin City, Melville, Simenon, Chandler).
 
 Comment on joue : le joueur lit la scène de crime, interroge les suspects en choisissant des questions dans une liste, fouille des lieux, épingle les indices trouvés, puis accuse un suspect en choisissant un mobile et UNE preuve parmi ses indices. Il n'a que 15 questions et 3 fouilles pour toute l'affaire : il ne pourra pas tout voir, il doit choisir. Une partie peut se jouer à plusieurs (2 à 6 détectives privés) : la même affaire, chacun de son côté.
 

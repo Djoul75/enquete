@@ -107,7 +107,7 @@ self.addEventListener("push", (event) => {
     data = { body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Enquête", {
+    self.registration.showNotification(data.title || "Agence Noire", {
       body: data.body || "",
       icon: "./icone-192.png",
       badge: "./icone-192.png",

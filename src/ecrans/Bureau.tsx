@@ -120,7 +120,7 @@ export function BureauRdv({ partie, pseudo }: { partie: number; pseudo: string }
   const avec = autour.filter((p) => !p.hote && !p.moi).map((p) => p.pseudo);
 
   return (
-    <main className={`ecran${bureau.moi_hote ? "" : " pluie"}`}>
+    <main className={"ecran"}>
       <a href="#/" className="lien-retour">← DOSSIERS</a>
 
       {bureau.moi_hote ? (

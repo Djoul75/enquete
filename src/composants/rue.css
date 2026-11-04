@@ -1,0 +1,34 @@
+/* La rue de l'agence, la nuit : décor de l'écran de démarrage (maquette C bis).
+   Dessinée sur 390 × 844 et agrandie pour couvrir l'écran. Le O de NOIRE, rouge
+   comme dans le logo, grésille avant de s'allumer, et son reflet suit. */
+.rue { position: absolute; left: 50%; top: 50%; width: 390px; height: 844px; transform: translate(-50%, -50%) scale(var(--echelle, 1)); }
+.rue-bloc { position: absolute; }
+.rue-ciel { position: absolute; left: -400px; right: -400px; top: -400px; bottom: 0; background: linear-gradient(180deg, #06070a 0%, #06070a 30%, #0e0f14 85%); }
+.rue-agence { left: -400px; top: -400px; width: 540px; height: 1152px; background: #1b181a; border-right: 4px solid #242024; }
+.rue-fenetre { left: 26px; width: 82px; height: 108px; box-sizing: border-box; border: 5px solid #0f0d0e; background: #0d0d11; }
+.rue-store { background: repeating-linear-gradient(180deg, #e7bf74 0 6px, #3a2814 6px 9px); }
+.rue-porte { left: 22px; top: 600px; width: 90px; height: 152px; box-sizing: border-box; border: 5px solid #0f0d0e; background: linear-gradient(180deg, #f0d49a 0 46%, #2b1c12 46%); }
+.rue-porte-lueur { left: 0; top: 752px; width: 160px; height: 300px; background: radial-gradient(ellipse at 40% 0%, rgba(240, 212, 154, 0.25), transparent 60%); }
+.rue-potence { left: 144px; width: 34px; height: 5px; background: #2c2a2e; }
+.rue-enseigne { left: 178px; top: 110px; width: 128px; box-sizing: border-box; border: 3px solid #2f2c31; background: rgba(11, 11, 11, 0.94); padding: 14px 0; display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 90px rgba(215, 38, 30, 0.22), 0 0 60px rgba(246, 239, 224, 0.08); }
+.rue-agence-mot { font-family: "Bebas Neue", sans-serif; font-size: 26px; letter-spacing: 5px; padding: 0 0 4px 5px; border-bottom: 2px solid #3a3833; margin-bottom: 6px; color: #f6efe0; text-shadow: 0 0 4px #fff6e4, 0 0 14px rgba(246, 239, 224, 0.6); }
+.rue-lettre { font-family: "Bebas Neue", sans-serif; font-size: 82px; line-height: 0.86; }
+.rue-creme { color: #f6efe0; text-shadow: 0 0 4px #fff6e4, 0 0 14px rgba(246, 239, 224, 0.6); }
+.rue-o { color: #3a1412; animation: rue-o 1s steps(1) both; }
+@keyframes rue-o {
+  0%, 22% { color: #3a1412; text-shadow: none; }
+  24%, 30% { color: #ff4a3d; text-shadow: 0 0 6px #ff4a3d, 0 0 20px rgba(215, 38, 30, 0.9); }
+  31%, 44% { color: #3a1412; text-shadow: none; }
+  46%, 50% { color: #ff4a3d; text-shadow: 0 0 6px #ff4a3d, 0 0 20px rgba(215, 38, 30, 0.9); }
+  52%, 58% { color: #3a1412; text-shadow: none; }
+  60%, 100% { color: #ff4a3d; text-shadow: 0 0 6px #ff4a3d, 0 0 20px rgba(215, 38, 30, 0.9), 0 0 50px rgba(215, 38, 30, 0.6); }
+}
+.rue-lanterne { left: 334px; top: 450px; width: 26px; height: 24px; background: #f3d98f; box-shadow: 0 0 24px #f3d98f, 0 0 60px rgba(243, 217, 143, 0.5); }
+.rue-cone { left: 230px; top: 470px; width: 234px; height: 290px; background: radial-gradient(ellipse at 50% 0%, rgba(243, 217, 143, 0.16), transparent 65%); }
+.rue-reflet-rouge { left: 200px; top: 782px; width: 90px; height: 62px; background: linear-gradient(180deg, rgba(255, 74, 61, 0.55), transparent); filter: blur(7px); opacity: 0.1; animation: rue-reflet 1s steps(1) both; }
+@keyframes rue-reflet {
+  0%, 22%, 31%, 44%, 52%, 58% { opacity: 0.1; }
+  24%, 46%, 60%, 100% { opacity: 1; }
+}
+.rue-reflet-jaune { left: 318px; top: 782px; width: 56px; height: 62px; background: linear-gradient(180deg, rgba(243, 217, 143, 0.45), transparent); filter: blur(7px); }
+.rue-pied { position: absolute; left: 0; right: 0; bottom: calc(20px + env(safe-area-inset-bottom)); text-align: center; font-family: "Special Elite", monospace; font-size: 11px; letter-spacing: 2px; color: #8a867e; }

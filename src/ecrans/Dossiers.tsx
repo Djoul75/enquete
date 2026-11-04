@@ -6,6 +6,7 @@ import { activerNotifications, etatNotifications } from "../lib/push";
 import { appareil, installee } from "../lib/installation";
 import { useTampons } from "../lib/tampons";
 import { CoupsDeTampon } from "../composants/CoupDeTampon";
+import { Logo } from "../composants/Logo";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumeBureau, ResumePartie } from "../lib/types";
 
@@ -44,10 +45,8 @@ export function Dossiers() {
 
   if (!accueil) {
     return (
-      <main className="ecran pluie">
-        <h1 className="titre" style={{ fontSize: 88 }}>
-          ENQUÊ<span className="rouge neon">T</span>E
-        </h1>
+      <main className="ecran">
+        <Logo taille="min(17.5vw, 84px)" neon />
         {erreur ? (
           <p className="erreur">{erreur}</p>
         ) : (
@@ -68,7 +67,7 @@ export function Dossiers() {
   const { moi } = accueil;
 
   return (
-    <main className="ecran pluie">
+    <main className="ecran">
       <div className="machine" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12, color: "var(--gris-clair)" }}>
         <a href="#/compte" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}>AGENCE {moi.pseudo.toUpperCase()}</a>
         <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -79,9 +78,7 @@ export function Dossiers() {
         </span>
       </div>
 
-      <h1 className="titre" style={{ fontSize: 88 }}>
-        ENQUÊ<span className="rouge neon">T</span>E
-      </h1>
+      <Logo taille="min(17.5vw, 84px)" neon />
 
       {accueil.bureaux.map((b, i) => (
         <CarteRendezVous key={b.id} bureau={b} rang={i} />

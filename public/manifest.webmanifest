@@ -1,6 +1,6 @@
 {
-  "name": "Enquête",
-  "short_name": "Enquête",
+  "name": "Agence Noire",
+  "short_name": "Agence Noire",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

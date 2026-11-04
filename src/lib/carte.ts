@@ -189,22 +189,24 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
   ctx.fillText("À TON TOUR, PRIVÉ :", G, H - 34);
   ctx.fillText(SITE, G, H - 21);
   ctx.textAlign = "right";
-  ctx.font = `30px ${TITRE}`;
-  const fin = "E";
+  // AGENCE / NOIRE, le O en rouge comme sur l'enseigne.
+  ctx.font = `24px ${TITRE}`;
+  ctx.fillText("AGENCE", D, H - 31);
+  const fin = "IRE";
   const wFin = ctx.measureText(fin).width;
-  const wT = ctx.measureText("T").width;
-  ctx.fillText(fin, D, H - 20);
+  const wO = ctx.measureText("O").width;
+  ctx.fillText(fin, D, H - 11);
   ctx.fillStyle = ROUGE;
-  ctx.fillText("T", D - wFin, H - 20);
+  ctx.fillText("O", D - wFin, H - 11);
   ctx.fillStyle = ENCRE;
-  ctx.fillText("ENQUÊ", D - wFin - wT, H - 20);
+  ctx.fillText("N", D - wFin - wO, H - 11);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Image impossible"))), "image/png"));
 }
 
 // Partage natif (iPhone, Android) avec l'image ; sinon, téléchargement.
 export async function partagerCarte(blob: Blob, d: DonneesCarte): Promise<"partage" | "telecharge" | "annule"> {
-  const fichier = new File([blob], `enquete-${d.partie}.png`, { type: "image/png" });
+  const fichier = new File([blob], `agence-noire-${d.partie}.png`, { type: "image/png" });
   const texte = `${d.titre} : ${d.score} points. À ton tour, privé : https://djoul75.github.io/enquete/`;
   if (navigator.canShare?.({ files: [fichier] })) {
     try {

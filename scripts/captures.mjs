@@ -79,6 +79,12 @@ async function capture(nom, hash, pleinePage = true) {
   await page.goto(SITE + hash);
   await page.reload();
   await page.waitForTimeout(1600);
+  // Un tampon gagné en route (les associés) recouvrirait l'écran : on le range.
+  const continuer = page.locator(".coup-tampon >> text=CONTINUER");
+  if (await continuer.count()) {
+    await continuer.first().click();
+    await page.waitForTimeout(500);
+  }
   await page.screenshot({ path: `${SORTIE}/${nom}.png`, fullPage: pleinePage });
   console.log("capturé", nom);
 }

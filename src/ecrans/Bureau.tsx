@@ -147,7 +147,7 @@ export function BureauRdv({ partie, pseudo }: { partie: number; pseudo: string }
           ) : (
             <span className="caviarde" aria-label="Titre caché"><i style={{ width: "38%" }} /><i style={{ width: "18%" }} /><i style={{ width: "28%" }} /></span>
           )}
-          <span className="machine" style={{ fontSize: 11 }}>{autour.length} PRIVÉS · 15 QUESTIONS · 3 FOUILLES</span>
+          <span className="machine" style={{ fontSize: 11 }}>{autour.length} PRIVÉS · UNE NUIT · UN VERDICT</span>
         </div>
       )}
 

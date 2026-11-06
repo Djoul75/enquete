@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { marquerRegleNuitVue } from "../lib/accueil";
 import { aller } from "../lib/routeur";
 import { useGlisser, vibrer } from "../lib/effets";
 import { PorteAgence } from "../composants/PorteAgence";
@@ -135,6 +136,7 @@ export function Tuto({ pseudo }: { pseudo: string }) {
   const [page, setPage] = useState(0);
   const [sens, setSens] = useState<"droite" | "gauche">("droite");
   const derniere = page === PAGES.length - 1;
+  useEffect(marquerRegleNuitVue, []);
 
   function tourner(n: number) {
     if (n < 0 || n >= PAGES.length) return;

@@ -148,7 +148,7 @@ export function Compte({ pseudo, onRenomme }: { pseudo: string; onRenomme: (pseu
         <a href="#/regles" className="reglage lien">
           <span>
             <span className="reglage-titre">Toutes les règles</span>
-            <span className="petit">Points, pistes, parties à plusieurs</span>
+            <span className="petit">L'horloge, la cigarette, les verdicts</span>
           </span>
           <span className="fleche">→</span>
         </a>

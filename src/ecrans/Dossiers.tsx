@@ -10,6 +10,8 @@ import { Logo } from "../composants/Logo";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumeBureau, ResumePartie } from "../lib/types";
 import { depuisDebut, finDeNuit, heureNuit } from "../lib/partie";
+import { Cigarette } from "../composants/Cigarette";
+import { regleNuitVue } from "../lib/accueil";
 
 export function Dossiers() {
   const { accueil, erreur, setErreur, charger } = useAccueil();
@@ -17,6 +19,7 @@ export function Dossiers() {
   const [notifs, setNotifs] = useState(etatNotifications());
   const maintenant = useMaintenant(30_000);
   const { tampons, nouveaux, marquerVus } = useTampons();
+  const [regleVue] = useState(regleNuitVue);
 
   async function seul() {
     setOccupe(true);
@@ -76,6 +79,8 @@ export function Dossiers() {
       </div>
 
       <Logo taille="min(17.5vw, 84px)" neon />
+
+      {!regleVue && <NouvelleRegle />}
 
       {accueil.bureaux.map((b, i) => (
         <CarteRendezVous key={b.id} bureau={b} rang={i} />
@@ -150,6 +155,35 @@ export function Dossiers() {
       )}
       <OngletsAccueil actif="dossiers" demandes={accueil.demandes_associes} />
     </main>
+  );
+}
+
+// Pour les agences inscrites avant la règle de la nuit : le tuto ne s'ouvre
+// tout seul qu'à l'inscription. L'encart disparaît dès qu'on l'a ouvert.
+function NouvelleRegle() {
+  return (
+    <a href="#/tuto" className="nouvelle-regle apparait">
+      <span className="machine tampon-nouvelle">NOUVELLE RÈGLE</span>
+      <span className="titre" style={{ fontSize: 40, lineHeight: 0.9 }}>
+        LA NUIT
+        <br />
+        <span className="rouge-sombre">TOURNE.</span>
+      </span>
+      <span className="nouvelle-regle-dessins" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 26 26">
+          <circle cx="13" cy="13" r="12" fill="none" stroke="#0b0b0b" strokeWidth="1.4" />
+          <line x1="13" y1="13" x2="13" y2="7" stroke="#0b0b0b" strokeWidth="2" strokeLinecap="round" />
+          <line x1="13" y1="13" x2="18" y2="9" stroke="#a51d17" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+        <Cigarette patience={2} max={3} etat="libre" taille="petite" nom="un suspect" />
+      </span>
+      <span style={{ fontSize: 14, lineHeight: 1.45 }}>
+        Plus de questions comptées : une horloge, des suspects qui perdent patience, et un verdict au bout. Une minute pour comprendre.
+      </span>
+      <span className="titre" style={{ fontSize: 22, display: "flex", justifyContent: "space-between" }}>
+        LIRE LE NOUVEAU TUTO <span className="rouge-sombre">→</span>
+      </span>
+    </a>
   );
 }
 

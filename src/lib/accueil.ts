@@ -33,3 +33,20 @@ export function useAccueil(intervalle = 30_000) {
 
   return { accueil, erreur, setErreur, charger };
 }
+
+// La règle de la nuit a-t-elle été lue (tuto ouvert) sur ce téléphone ?
+const CLE_REGLE = "enquete-regle-nuit-vue";
+export function regleNuitVue(): boolean {
+  try {
+    return !!localStorage.getItem(CLE_REGLE);
+  } catch {
+    return true;
+  }
+}
+export function marquerRegleNuitVue() {
+  try {
+    localStorage.setItem(CLE_REGLE, "1");
+  } catch {
+    // stockage interdit : l'encart reviendra
+  }
+}

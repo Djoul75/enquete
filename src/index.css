@@ -1394,3 +1394,34 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .tuto-cigarette { grid-column: 1 / -1; justify-self: center; margin-top: 4px; transform: scale(1.4); transform-origin: top center; }
 .tuto-tampon { align-self: flex-end; margin-top: -40px; margin-right: 8px; font-size: 30px; }
 button.bouton-rond { appearance: none; border: none; color: var(--papier); cursor: pointer; padding: 0; }
+
+/* Accueil : l'encart de la nouvelle règle, comme un avis punaisé. */
+.nouvelle-regle {
+  position: relative;
+  text-decoration: none;
+  background: var(--papier);
+  color: var(--encre);
+  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: rotate(-0.8deg);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+  transition: transform 0.15s;
+}
+.nouvelle-regle:active { transform: rotate(-0.8deg) scale(0.98); }
+.tampon-nouvelle {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  border: 2px solid var(--rouge-sombre);
+  color: var(--rouge-sombre);
+  padding: 2px 8px;
+  transform: rotate(6deg);
+  mix-blend-mode: multiply;
+  animation: claque-scelle 0.45s cubic-bezier(0.5, 0, 0.75, 0) 0.4s both;
+}
+.nouvelle-regle-dessins { position: absolute; right: 16px; top: 56px; display: flex; align-items: center; gap: 10px; }
+.nouvelle-regle .cig-fumee path { stroke: #8a867e; }

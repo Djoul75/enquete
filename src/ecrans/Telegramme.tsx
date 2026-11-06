@@ -1,11 +1,10 @@
 import type { EtatPartie } from "../lib/types";
 import { compteARebours, useMaintenant } from "../lib/routeur";
-import { compteurs } from "../lib/partie";
+import { heureNuit } from "../lib/partie";
 
 export function Telegramme({ etat, onLu }: { etat: EtatPartie; onLu: () => void }) {
   const maintenant = useMaintenant();
   const accusateur = etat.autres.find((a) => a.a_accuse);
-  const c = compteurs(etat);
   const echeance = etat.partie.echeance;
   const ecoule = echeance ? 1 - (new Date(echeance).getTime() - maintenant) / 86_400_000 : 0;
   const heure = accusateur?.accuse_at
@@ -41,11 +40,9 @@ export function Telegramme({ etat, onLu }: { etat: EtatPartie; onLu: () => void 
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, position: "relative" }}>
           <span>
-            Toi : {c.questions} questions sur {etat.limites.questions}.
+            Dans ton enquête, il est {heureNuit(etat.affaire.public.horloge, etat.nuit.minutes)}. Tout s'arrête à {heureNuit(etat.affaire.public.horloge, etat.nuit.aube)}.
           </span>
-          <span>
-            Il te reste {c.fouillesRestantes} fouille{c.fouillesRestantes > 1 ? "s" : ""}.
-          </span>
+          <span>Ton dossier sera daté de l'heure de ta nuit, pas de celle de ta montre.</span>
         </div>
 
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>

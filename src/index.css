@@ -12,6 +12,8 @@
   --rouge: #d7261e;
   --rouge-texte: #e8463c; /* petit texte rouge lisible sur le noir */
   --rouge-sombre: #a51d17; /* rouge sur le papier */
+  --aube: #e9a35c; /* le jour qui se lève */
+  --aube-texte: #f0b878;
   --gris: #8a867e;
   --gris-clair: #b5b0a7;
   --trait: #2a2925;
@@ -210,9 +212,6 @@ a { color: inherit; }
   transition: opacity 0.35s var(--douce), transform 0.35s var(--douce);
 }
 .entete-titre.visible { opacity: 1; transform: none; }
-.entete-compteurs { display: flex; gap: 6px; font-size: 12px; padding-right: 8px; flex-shrink: 0; }
-.entete-compteurs > span { display: flex; align-items: center; gap: 4px; border: 1px solid var(--trait-fort); padding: 4px 7px; }
-.entete-compteurs .rouge-trait { border-color: var(--rouge); color: var(--rouge-texte); }
 .bandeau-duel {
   display: flex;
   justify-content: space-between;
@@ -418,8 +417,6 @@ a { color: inherit; }
 .bouton-fouiller:active { transform: scale(0.98); }
 .bouton-fouiller:disabled { opacity: 0.4; cursor: default; }
 .decor-lieu.en-cours ~ .lieu-corps .bouton-fouiller:disabled { opacity: 1; }
-.jeton { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--gris); flex-shrink: 0; }
-.jeton.plein { background: var(--rouge); border-color: var(--rouge); }
 
 .pastille-lieu { appearance: none; background: none; border: none; padding: 12px 3px; cursor: pointer; }
 .pastille-lieu span { display: block; width: 18px; height: 3px; background: var(--trait-fort); transition: background 0.3s, width 0.3s var(--ressort); }
@@ -539,7 +536,7 @@ a { color: inherit; }
 
 .ecran.accusation { gap: 14px; padding-top: env(safe-area-inset-top); }
 .accusation-haut { height: 48px; display: flex; align-items: center; justify-content: space-between; }
-.progression { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.progression { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .progression span { height: 3px; background: var(--trait-fort); position: relative; overflow: hidden; }
 .progression span.faite::after { content: ""; position: absolute; inset: 0; background: var(--rouge); animation: remplit 0.5s var(--ressort) both; transform-origin: left; }
 @keyframes remplit { from { transform: scaleX(0); } }
@@ -661,7 +658,6 @@ a { color: inherit; }
   100% { opacity: 1; transform: none; }
 }
 .ecran.journal { overflow-x: hidden; }
-.carte-score { padding: 12px; display: flex; flex-direction: column; gap: 6px; animation: apparait 0.5s var(--douce) both; }
 .ligne-preuve { display: grid; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px dashed var(--gris); font-size: 13px; }
 .ligne-preuve:first-child { border-top: none; }
 .detail-trahi { margin-top: 6px; padding: 8px 0 8px 10px; border-left: 3px solid var(--rouge-sombre); background: rgba(165, 29, 23, 0.08); font-size: 13px; }
@@ -686,7 +682,6 @@ a { color: inherit; }
   transition: transform 0.15s;
 }
 .carte-en-cours:active { transform: scale(0.985) rotate(-0.4deg); }
-.jauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .jauge { transform-origin: left; animation: remplit 0.9s var(--ressort) 0.3s both; }
 .bandeau-carte { display: flex; align-items: center; gap: 8px; font-size: 11px; background: var(--encre); color: var(--papier); padding: 8px 10px; }
 .ligne-archive { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; border-top: 1px solid var(--trait); }
@@ -1085,3 +1080,317 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .coup-boutons { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 6px; animation: apparait 0.4s var(--douce) 0.85s both; }
 .coup-boutons .lien-retour { color: #55524c; }
 @media (prefers-reduced-motion: reduce) { .coup-manche { display: none; } }
+
+/* ---------- La nuit : horloge, fil, règle graduée ---------- */
+
+.horloge { position: relative; display: flex; align-items: center; gap: 7px; padding-right: 8px; flex-shrink: 0; color: var(--gris-clair); }
+.horloge .cadran { display: block; }
+.horloge .aiguille { transform-origin: 13px 13px; }
+.heure-nuit { font-size: 26px; color: var(--papier); font-variant-numeric: tabular-nums; min-width: 2.6ch; text-align: right; }
+.horloge.aube { color: var(--aube-texte); }
+.horloge.aube .heure-nuit { color: var(--aube-texte); }
+.cout-envole {
+  position: absolute;
+  right: 6px;
+  top: 100%;
+  font-size: 11px;
+  color: var(--rouge-texte);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: envole 1.5s var(--douce) both;
+}
+@keyframes envole {
+  0% { opacity: 0; transform: translateY(8px); }
+  15% { opacity: 1; transform: none; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-26px); }
+}
+
+/* Le fil de la nuit, collé sous l'en-tête : ce qui est passé pâlit vers l'aube. */
+.fil-nuit { position: relative; display: block; height: 2px; background: var(--trait); }
+.fil-nuit-passe {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--gris) 0%, var(--papier) 70%, var(--aube) 100%);
+  background-size: 100vw 100%;
+  transition: transform 0.8s var(--ressort);
+}
+.fil-nuit-repere { position: absolute; top: -2px; width: 2px; height: 6px; margin-left: -1px; background: var(--rouge); }
+.fil-nuit-repere.passe { background: var(--gris); }
+
+.la-nuit { display: flex; flex-direction: column; gap: 10px; }
+.regle-nuit { position: relative; height: 54px; margin: 0 8px; border-bottom: 1px solid var(--gris); }
+.regle-passe { position: absolute; left: 0; bottom: 0; height: 12px; background: repeating-linear-gradient(-45deg, rgba(237, 232, 221, 0.16) 0 2px, transparent 2px 6px); transition: width 0.8s var(--ressort); }
+.graduation { position: absolute; bottom: 0; width: 1px; height: 6px; background: var(--gris); }
+.graduation.pile { height: 12px; background: var(--gris-clair); }
+.graduation span { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--gris-clair); }
+.regle-nuit .graduation span { top: auto; bottom: -18px; }
+.regle-nuit { margin-bottom: 18px; }
+.regle-evenement { position: absolute; bottom: -4px; width: 9px; height: 9px; margin-left: -4.5px; background: var(--rouge); transform: rotate(45deg); }
+.regle-evenement.passe { background: var(--trait-fort); }
+.regle-aube { position: absolute; right: -8px; bottom: 0; width: 46px; height: 46px; border-radius: 50% 50% 0 0; background: radial-gradient(circle at 50% 100%, rgba(233, 163, 92, 0.55), rgba(233, 163, 92, 0) 70%); pointer-events: none; }
+.aiguille-nuit { position: absolute; bottom: 0; top: 2px; width: 2px; margin-left: -1px; background: var(--rouge); transition: left 0.8s var(--ressort); }
+.aiguille-nuit::after { content: ""; position: absolute; bottom: -5px; left: -4px; border: 5px solid transparent; border-bottom-color: var(--rouge); transform: rotate(180deg); }
+.aiguille-nuit .titre { position: absolute; top: -4px; left: 6px; font-size: 22px; white-space: nowrap; color: var(--papier); }
+.evenements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.evenements li { display: grid; grid-template-columns: 4.6ch minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px dashed var(--trait-fort); font-size: 13px; }
+.evenements li .titre { font-size: 20px; color: var(--rouge-texte); white-space: nowrap; }
+.evenements li.passe { color: var(--gris); }
+.evenements li.passe > span:last-child { text-decoration: line-through; text-decoration-color: var(--gris); }
+.evenements li.passe .titre { color: var(--gris); }
+
+/* ---------- Cigarette (patience) ---------- */
+
+.cigarette { display: block; overflow: visible; flex-shrink: 0; }
+.cig-corps { transform-box: fill-box; transform-origin: left center; transition: transform 0.8s var(--ressort); }
+.cig-tete { transition: transform 0.8s var(--ressort); }
+.cig-fumee path { fill: none; stroke: var(--gris-clair); stroke-width: 1.1; stroke-linecap: round; opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; animation: cig-fumee 3.6s ease-in-out infinite; }
+.cig-fumee path:nth-child(2) { animation-duration: 4.4s; animation-delay: -2s; }
+@keyframes cig-fumee {
+  0% { opacity: 0; transform: translateY(4px) scaleY(0.6); }
+  35% { opacity: 0.55; }
+  100% { opacity: 0; transform: translate(3px, -7px) scaleY(1.2); }
+}
+.cig-braise { animation: cig-braise 2.4s ease-in-out infinite; }
+@keyframes cig-braise { 50% { fill: #ff7a2e; } }
+.cig-lueur { transform-box: fill-box; transform-origin: center; animation: cig-lueur 2.4s ease-in-out infinite; }
+@keyframes cig-lueur { 50% { opacity: 0.35; transform: scale(0.75); } }
+.cig-chute { transform-box: fill-box; transform-origin: left center; animation: cig-chute 1.1s cubic-bezier(0.5, 0, 0.75, 0) 0.15s forwards; }
+@keyframes cig-chute {
+  0% { transform: none; opacity: 1; }
+  20% { transform: rotate(10deg); }
+  100% { transform: translate(8px, 22px) rotate(75deg); opacity: 0; }
+}
+.cigarette.parti { opacity: 0.45; }
+
+/* ---------- Interrogatoire : patience, braquage, pièces montrées ---------- */
+
+.tete-suspect { display: flex; gap: 12px; align-items: flex-end; border-bottom: 3px solid var(--rouge); padding-bottom: 6px; }
+.patience { display: flex; flex-direction: column; align-items: flex-end; gap: 0; flex-shrink: 0; }
+.patience .machine { font-size: 10px; color: var(--gris); }
+.visage-salle { position: absolute; left: 50%; bottom: 0; width: 150px; transform: translateX(-50%); transition: opacity 0.6s, filter 0.6s; }
+.salle-interrogatoire.braque .lampe { animation: none; opacity: 0.25; }
+.salle-interrogatoire.braque .visage-salle { filter: brightness(0.6); }
+.salle-interrogatoire.parti .lampe { animation: none; opacity: 0.15; }
+.salle-interrogatoire.parti .visage-salle { opacity: 0.12; filter: blur(1px); }
+.tampon-salle { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(-8deg); border: 3px solid var(--gris-clair); color: var(--gris-clair); font-size: 22px; letter-spacing: 4px; padding: 2px 12px; }
+
+.trombinoscope a.braque .medaillon { filter: grayscale(1) brightness(0.7); box-shadow: 0 0 0 1px var(--rouge); }
+.trombinoscope a.parti { opacity: 0.4; }
+.trombinoscope a.parti .medaillon { filter: grayscale(1); }
+
+.echange { display: flex; flex-direction: column; gap: 10px; }
+.horodatage { align-self: flex-end; font-size: 10px; color: var(--gris); margin-bottom: -6px; }
+.bulle-piece {
+  align-self: flex-end;
+  max-width: 80%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--papier);
+  color: var(--encre);
+  padding: 12px 12px 9px;
+  font-family: var(--machine);
+  font-size: 13px;
+  line-height: 1.3;
+  transform: rotate(1.5deg);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+.bulle-piece .punaise { position: absolute; top: -4px; left: 50%; margin-left: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--rouge); box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4); }
+.reponse { display: flex; gap: 10px; align-items: flex-start; }
+.reponse.ricane { color: var(--gris-clair); }
+.agace { font-size: 11px; color: var(--rouge-texte); letter-spacing: 1px; }
+.tampon-interro {
+  align-self: center;
+  font-size: 22px;
+  letter-spacing: 4px;
+  border: 3px solid var(--rouge);
+  color: var(--rouge-texte);
+  padding: 2px 12px;
+  transform: rotate(-6deg);
+}
+.tampon-interro.craque { border-color: var(--papier); color: var(--papier); transform: rotate(4deg); }
+.tampon-interro.claque { animation: claque-interro 0.45s cubic-bezier(0.5, 0, 0.75, 0) both; }
+.tampon-interro.craque.claque { animation-name: claque-craque; }
+@keyframes claque-interro {
+  0% { opacity: 0; transform: rotate(-20deg) scale(2.6); }
+  80% { opacity: 1; transform: rotate(-6deg) scale(0.94); }
+  100% { opacity: 1; transform: rotate(-6deg) scale(1); }
+}
+@keyframes claque-craque {
+  0% { opacity: 0; transform: rotate(16deg) scale(2.6); }
+  80% { opacity: 1; transform: rotate(4deg) scale(0.94); }
+  100% { opacity: 1; transform: rotate(4deg) scale(1); }
+}
+.braquage { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
+.braquage .replique { font-style: italic; color: var(--rouge-texte); text-align: center; font-size: 14px; max-width: 32ch; }
+
+.question-ligne { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%; }
+.bouton.question .cout, .montrer-piece .cout { font-size: 11px; color: var(--gris); white-space: nowrap; flex-shrink: 0; }
+.bouton.question.relance { border-color: var(--gris-clair); border-left-width: 3px; }
+.bouton.question.piste { border-color: var(--rouge); }
+.etiquette-relance { display: inline-block; font-size: 9px; letter-spacing: 1px; background: var(--papier); color: var(--encre); padding: 1px 4px; margin-right: 6px; vertical-align: 2px; }
+.montrer-piece { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-style: dashed; border-color: var(--gris-clair); font-family: var(--machine); font-size: 12px; letter-spacing: 1px; }
+
+/* Le mur en plein écran, pour choisir la pièce à montrer. */
+.montrer-plein {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--encre);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(8px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: montrer-monte 0.45s var(--ressort) both;
+}
+@keyframes montrer-monte { from { transform: translateY(100%); } }
+.montrer-haut { display: flex; justify-content: space-between; align-items: center; margin-left: -12px; }
+.montrer-titre { display: flex; gap: 12px; align-items: flex-end; border-bottom: 3px solid var(--rouge); padding-bottom: 8px; }
+.montrer-mur { flex: 1; align-content: start; }
+.montrer-mur .note-mur { all: unset; position: relative; cursor: pointer; background: var(--papier); color: var(--encre); padding: 8px 10px 10px; font-family: var(--machine); font-size: 13px; line-height: 1.3; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); rotate: var(--r); transition: scale 0.25s var(--ressort), opacity 0.25s, translate 0.35s var(--ressort); }
+.montrer-mur .note-mur.epingle { animation: epingle 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.montrer-mur .note-mur:active { scale: 0.96; }
+.montrer-mur .note-mur:focus-visible { outline: 2px solid var(--rouge); outline-offset: 2px; }
+.montrer-mur .note-mur.choisie { scale: 1.12; translate: 0 -12px; box-shadow: 0 0 0 3px var(--rouge), 0 18px 36px rgba(0, 0, 0, 0.7); z-index: 2; }
+.montrer-mur .note-mur.ecartee { opacity: 0.25; }
+
+/* ---------- Scène et lieux ---------- */
+
+.carte-suspect-visage { width: 56px; flex-shrink: 0; transition: filter 0.4s, opacity 0.4s; }
+.carte-suspect.braque .carte-suspect-visage { filter: grayscale(1) brightness(0.75); }
+.carte-suspect.parti { opacity: 0.55; }
+.carte-suspect.parti .carte-suspect-visage { filter: grayscale(1); }
+.carte-suspect .cigarette { margin: 2px 0 -2px -2px; }
+.tampon-carte.gris { border-color: var(--gris); color: var(--gris); }
+.cout-carte { position: absolute; top: 8px; right: 8px; font-size: 10px; background: var(--encre); padding: 2px 6px; letter-spacing: 1px; }
+.cout-carte.rouge { color: var(--rouge-texte); border: 1px solid var(--rouge); }
+.cout-fouille { font-size: 12px; border: 2px solid var(--encre); padding: 3px 7px; white-space: nowrap; }
+.avertissement-lieu { font-size: 12px; color: var(--rouge-texte); border-left: 2px solid var(--rouge); padding-left: 10px; line-height: 1.45; }
+.rien-trouve { align-self: flex-start; font-size: 13px; letter-spacing: 3px; border: 2px dashed var(--gris); color: var(--gris-clair); padding: 4px 10px; transform: rotate(-2deg); }
+
+/* ---------- Événements de la nuit et aube ---------- */
+
+.alerte-nuit { position: fixed; inset: 0; z-index: 80; display: flex; overflow: hidden; animation: alerte-entre 0.35s var(--douce) both; }
+@keyframes alerte-entre { from { opacity: 0; } }
+.alerte-corps {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(40px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.alerte-nuit.evenement { background: rgba(11, 11, 11, 0.94); color: var(--papier); }
+.telegramme-papier {
+  margin-top: 12vh;
+  background: var(--papier);
+  color: var(--encre);
+  padding: 20px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7);
+  animation: telegramme-tombe 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.1s both;
+  transform: rotate(-1.5deg);
+}
+@keyframes telegramme-tombe { from { opacity: 0; transform: translateY(-60px) rotate(6deg); } }
+.telegramme-papier p { margin: 0; font-size: 16px; line-height: 1.45; letter-spacing: 1px; }
+.heure-tampon {
+  align-self: flex-start;
+  font-size: 54px;
+  color: var(--rouge-sombre);
+  border: 4px solid var(--rouge-sombre);
+  padding: 4px 12px 0;
+  margin: 2px 0 8px;
+  transform: rotate(-4deg);
+  mix-blend-mode: multiply;
+  animation: claque-pv 0.4s cubic-bezier(0.5, 0, 0.75, 0) 0.6s both;
+}
+.alerte-nuit.aube { color: var(--papier); background: var(--encre); }
+.alerte-nuit.aube h1 { text-shadow: 0 2px 24px rgba(11, 11, 11, 0.35); }
+.ciel-aube {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #1d2238 0%, #6b4a63 38%, #e9a35c 72%, #f4dcb0 100%);
+  animation: aube-pointe 2.4s var(--douce) both;
+}
+.ciel-aube::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -40vw;
+  width: 90vw;
+  height: 90vw;
+  max-width: 520px;
+  max-height: 520px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 236, 200, 0.9), rgba(255, 236, 200, 0) 65%);
+  animation: soleil-monte 3s var(--douce) 0.3s both;
+}
+@keyframes aube-pointe { from { opacity: 0; filter: brightness(0.2); } }
+@keyframes soleil-monte { from { transform: translate(-50%, 30%); opacity: 0; } }
+.alerte-nuit.aube h1 { font-size: 92px; line-height: 0.84; animation: apparait 0.6s var(--douce) 0.8s both; }
+.alerte-nuit.aube p, .alerte-nuit.aube .machine { animation: apparait 0.6s var(--douce) 1s both; }
+.alerte-nuit.aube .gros-bouton { animation: apparait 0.6s var(--douce) 1.3s both; }
+
+/* ---------- Accusation, révélation, accueil ---------- */
+
+.choix-preuve.vide { background: transparent; color: var(--gris-clair); border: 1px dashed var(--gris); }
+.choix-preuve.vide.choisi { background: var(--carte); color: var(--papier); }
+
+.carte-verdict { padding: 12px; display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--encre); animation: apparait 0.5s var(--douce) both; }
+.carte-verdict.premier { background: var(--encre); color: var(--papier); }
+.tampon-verdict {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--titre);
+  font-size: 24px;
+  line-height: 0.95;
+  letter-spacing: 1px;
+  border: 3px solid currentColor;
+  padding: 4px 8px 2px;
+  margin: 2px 0 4px;
+  transform: rotate(-4deg);
+  animation: claque-pv 0.4s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+.tampon-verdict span + span { font-size: 15px; }
+.tampon-verdict.condamne { color: var(--rouge-sombre); }
+.carte-verdict.premier .tampon-verdict.condamne { color: var(--rouge-texte); }
+.tampon-verdict.relache { color: #7a5a1c; border-style: double; border-width: 4px; }
+.carte-verdict.premier .tampon-verdict.relache { color: var(--aube-texte); }
+.tampon-verdict.erreur, .tampon-verdict.aucun { color: #55524c; border-style: dashed; }
+.carte-verdict.premier .tampon-verdict.erreur { color: var(--gris-clair); }
+
+.ta-nuit { border-top: 1px solid var(--encre); }
+.ta-nuit-tete { all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px; }
+.ta-nuit-tete:focus-visible { outline: 1px solid var(--encre); }
+.chrono-nuit { list-style: none; margin: 0; padding: 0 0 8px; display: flex; flex-direction: column; }
+.chrono-nuit li { display: grid; grid-template-columns: 5ch minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px dashed var(--gris); font-size: 13px; }
+.chrono-nuit li .machine { font-size: 11px; color: #55524c; font-variant-numeric: tabular-nums; }
+
+.nuit-carte { display: flex; flex-direction: column; gap: 5px; }
+.nuit-carte-fil { display: block; height: 4px; background: #c9c3b6; }
+.nuit-carte-fil .jauge { display: block; height: 4px; background: linear-gradient(90deg, var(--encre), var(--encre) 70%, var(--rouge-sombre)); }
+
+/* Tutoriel : l'horloge et la cigarette. */
+.tuto-horloge { display: flex; align-items: center; gap: 18px; }
+.tuto-horloge svg { flex-shrink: 0; }
+.tuto-aiguille-m { transform-origin: 60px 60px; animation: tuto-minutes 4s var(--ressort) infinite; }
+.tuto-aiguille-h { transform-origin: 60px 60px; transform: rotate(60deg); animation: tuto-heures 4s var(--ressort) infinite; }
+@keyframes tuto-minutes { 0%, 20% { transform: rotate(0deg); } 45%, 60% { transform: rotate(60deg); } 85%, 100% { transform: rotate(240deg); } }
+@keyframes tuto-heures { 0%, 20% { transform: rotate(60deg); } 45%, 60% { transform: rotate(65deg); } 85%, 100% { transform: rotate(80deg); } }
+.tuto-couts { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--gris-clair); }
+.tuto-couts b { font-weight: 400; font-size: 26px; color: var(--papier); margin-right: 2px; }
+.tuto-suspects > span.tuto-cigarette { border: none; filter: none; }
+.tuto-cigarette { grid-column: 1 / -1; justify-self: center; margin-top: 4px; transform: scale(1.4); transform-origin: top center; }
+.tuto-tampon { align-self: flex-end; margin-top: -40px; margin-right: 8px; font-size: 30px; }
+button.bouton-rond { appearance: none; border: none; color: var(--papier); cursor: pointer; padding: 0; }

@@ -1,6 +1,7 @@
 // Teste la migration sur un Postgres en mémoire (PGlite) : agences,
-// associés, rendez-vous au bureau, puis une partie à trois de bout en bout.
-// Usage : node scripts/test-sql.mjs [affaires/x.json]
+// associés, rendez-vous au bureau, puis une nuit à trois de bout en bout
+// (horloge, patience, suspect braqué qui craque, événements, verdicts).
+// Usage : node scripts/test-sql.mjs [affaires/v2/x.json]
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { charger } from "../worker/affaire.mjs";
@@ -19,16 +20,22 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   insert into auth.users values ('${JULES}'), ('${JO}'), ('${MARCO}'), ('${INCONNU}');
 `);
-for (const m of ["0001_agence.sql", "0002_compte.sql", "0003_tampons.sql"]) {
+for (const m of ["0001_agence.sql", "0002_compte.sql", "0003_tampons.sql", "0004_nuit.sql"]) {
   await db.exec(readFileSync(new URL(`../supabase/migrations/${m}`, import.meta.url), "utf8"));
 }
 
-const fichiers = process.argv[2]
-  ? [process.argv[2]]
-  : ["../affaires/01-vieux-port.json", "../affaires/02-train-bleu.json"].map((f) => new URL(f, import.meta.url));
+// Une affaire de l'ancienne règle (pour les archives), puis celles de la nuit.
+const ancienne = JSON.parse(readFileSync(new URL("../affaires/01-vieux-port.json", import.meta.url), "utf8"));
+{
+  const { rows } = await db.query("insert into enquete_affaires (titre, public) values ($1, $2) returning id", [ancienne.titre, ancienne.public]);
+  await db.query("insert into enquete_affaires_secret values ($1, $2)", [rows[0].id, ancienne.secret]);
+}
+const fichiers = process.argv[2] ? [process.argv[2]] : [new URL("../affaires/v2/01-vieux-port.json", import.meta.url)];
 const affaires = fichiers.map((f) => charger(f));
+// Une seconde affaire pour la revanche et la partie seul.
+if (affaires.length === 1) affaires.push({ ...affaires[0], titre: `${affaires[0].titre} (bis)` });
 for (const affaire of affaires) {
-  const { rows } = await db.query("insert into enquete_affaires (titre, public) values ($1, $2) returning id", [affaire.titre, affaire.public]);
+  const { rows } = await db.query("insert into enquete_affaires (titre, public, regle) values ($1, $2, 2) returning id", [affaire.titre, affaire.public]);
   await db.query("insert into enquete_affaires_secret values ($1, $2)", [rows[0].id, affaire.secret]);
 }
 
@@ -112,62 +119,104 @@ await en(JULES, "select enquete_ouvrir_dossier($1)", [partie]);
 bureau = await en(MARCO, "select enquete_bureau($1)", [partie]);
 verifier(bureau.lancee, "le bureau sait que le dossier est ouvert");
 
-// --- La partie ------------------------------------------------------------
+// --- La nuit --------------------------------------------------------------
 let etat = await en(JO, "select enquete_etat($1)", [partie]);
 const affaire = affaires.find((a) => a.titre === etat.affaire.titre);
-verifier(etat.revelation === null && !JSON.stringify(etat).includes(affaire.secret.solution.recit), "la solution ne fuit pas");
+verifier(etat.regle === 2 && etat.revelation === null && !JSON.stringify(etat).includes(affaire.secret.solution.recit), "la solution ne fuit pas");
 verifier(etat.autres.length === 2, "trois privés sur l'affaire");
+verifier(etat.nuit.minutes === 0 && etat.nuit.aube === 240, "la nuit commence, 4 heures avant l'aube");
 
 const pub = affaire.public;
-const libre = pub.questions.find((q) => !q.requiert);
-const bloquee = pub.questions.find((q) => q.requiert);
-etat = await en(JULES, "select enquete_poser_question($1, $2)", [partie, libre.id]);
-verifier(etat.journal.length === 1 && etat.journal[0].texte === affaire.secret.questions[libre.id].texte, "question posée, réponse reçue");
-if (bloquee) {
-  await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, bloquee.id], "question verrouillée refusée");
-}
-
-for (const lieu of pub.lieux.slice(0, 3)) {
-  etat = await en(JULES, "select enquete_fouiller($1, $2)", [partie, lieu.id]);
-}
-await doitEchouer(JULES, "select enquete_fouiller($1, $2)", [partie, pub.lieux[3].id], "4e fouille refusée");
-const preuve = etat.journal.find((e) => e.indice)?.indice.id;
-verifier(preuve, "au moins un indice trouvé en fouillant");
-
 const sol = affaire.secret.solution;
-etat = await en(JULES, "select enquete_accuser($1, $2, $3, $4)", [partie, sol.coupable, sol.mobile, preuve]);
-verifier(etat.partie.echeance && !etat.partie.revelee, "Jules accuse : échéance de 24 h, pas encore révélé");
-await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, libre.id], "plus d'action après avoir accusé");
+const ouvertes = () => etat.nuit.ouvertes;
+const poser = async (uid, q) => (etat = await en(uid, "select enquete_poser_question($1, $2)", [partie, q]));
+const montrer = async (uid, s, p) => (etat = await en(uid, "select enquete_montrer($1, $2, $3)", [partie, s, p]));
+const fouiller = async (uid, l) => (etat = await en(uid, "select enquete_fouiller($1, $2)", [partie, l]));
 
-etat = await en(MARCO, "select enquete_fouiller($1, $2)", [partie, pub.lieux[0].id]);
-const preuveMarco = etat.journal.find((e) => e.indice)?.indice.id;
-if (preuveMarco) {
-  const autre = pub.suspects.find((s) => s.id !== sol.coupable).id;
-  etat = await en(MARCO, "select enquete_accuser($1, $2, $3, $4)", [partie, autre, sol.mobile, preuveMarco]);
-  verifier(!etat.partie.revelee, "Marco accuse, Joséphine n'a pas encore accusé");
-}
+verifier(ouvertes().every((id) => pub.questions.find((q) => q.id === id).genre === "ouverture"), "au départ, seulement les questions d'ouverture");
+const ouverture = pub.questions.find((q) => q.genre === "ouverture" && pub.questions.some((r) => r.apres === q.id));
+const relance = pub.questions.find((r) => r.apres === ouverture.id);
+await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, relance.id], "pas de relance avant sa question");
+await poser(JULES, ouverture.id);
+verifier(etat.nuit.minutes === 10 && etat.journal[0].texte === affaire.secret.questions[ouverture.id].texte, "question posée : +10 min");
+verifier(ouvertes().includes(relance.id), "la relance apparaît");
+await poser(JULES, relance.id);
+verifier(etat.nuit.minutes === 15, "relance : +5 min");
+await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, relance.id], "pas deux fois la même question");
+
+// Ferrand : deux crans. Le chemin de Sauveur mène au quai, la fouille donne la douille.
+await poser(JULES, "sauveur-comptoir");
+await poser(JULES, "sauveur-retour");
+verifier(ouvertes().includes("ferrand-retour"), "l'indice ouvre une piste chez Ferrand");
+await poser(JULES, "ferrand-soir");
+await poser(JULES, "ferrand-retour");
+verifier(etat.nuit.patience.ferrand === 1 && etat.journal.at(-1).fache, "question qui fâche : un cran de moins");
+await poser(JULES, "lola-soir");
+await poser(JULES, "lola-tel");
+await poser(JULES, "lola-ferrand");
+await poser(JULES, "ferrand-enveloppes");
+verifier(etat.nuit.braques.includes("ferrand") && etat.journal.at(-1).braque, "plus de patience : Ferrand se braque");
+verifier(!ouvertes().some((id) => id.startsWith("ferrand-")), "un suspect braqué n'a plus de questions");
+await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, "ferrand-marchetti"], "on n'interroge pas un suspect braqué");
+await montrer(JULES, "ferrand", "telephone");
+verifier(etat.journal.at(-1).ricane && etat.nuit.braques.includes("ferrand"), "mauvaise pièce : il ricane, toujours braqué");
+await doitEchouer(JULES, "select enquete_montrer($1, $2, $3)", [partie, "ferrand", "telephone"], "pas deux fois la même pièce");
+await doitEchouer(JULES, "select enquete_montrer($1, $2, $3)", [partie, "ferrand", "douille"], "on ne montre que ce qu'on a trouvé");
+const avantFouille = etat.nuit.minutes;
+await fouiller(JULES, "quai");
+verifier(etat.nuit.minutes === avantFouille + 30 && etat.indices.some((i) => i.id === "douille"), "fouille du quai : +30 min, la douille");
+await doitEchouer(JULES, "select enquete_fouiller($1, $2)", [partie, "quai"], "pas deux fouilles au même endroit");
+await montrer(JULES, "ferrand", "douille");
+verifier(etat.journal.at(-1).craque && !etat.nuit.braques.includes("ferrand") && etat.nuit.patience.ferrand === 1, "la bonne pièce : Ferrand craque");
+verifier(etat.indices.some((i) => i.id === "lapsus"), "il lâche le lapsus");
+await fouiller(JULES, "bar");
+verifier(!etat.journal.at(-1).indice, "le bar ne donne rien");
+const minutesJules = etat.nuit.minutes;
+
+etat = await en(JULES, "select enquete_accuser($1, $2, $3, $4, $5)", [partie, sol.coupable, sol.mobile, "retour", "lapsus"]);
+verifier(etat.partie.echeance && !etat.partie.revelee && etat.moi.accusation.minutes === minutesJules, "Jules signe : heure notée, 24 h pour les autres");
+await doitEchouer(JULES, "select enquete_poser_question($1, $2)", [partie, "irene-alibi"], "plus d'action après avoir signé");
+
+// Marco traîne : les événements tombent, puis l'aube.
+for (const q of ["lola-alibi", "lola-rapports", "irene-alibi", "irene-soucis", "irene-coffre", "irene-ferrand", "sauveur-vu", "sauveur-coup", "sauveur-ennemis"]) await poser(MARCO, q);
+for (const l of ["bureau", "loge", "bar"]) await fouiller(MARCO, l);
+verifier(etat.nuit.minutes === 165, `Marco à ${etat.nuit.minutes} min`);
+await poser(MARCO, "lola-quitter");
+await poser(MARCO, "lola-meurtre");
+verifier(etat.nuit.minutes === 180 && etat.nuit.absents.includes("irene"), "4 h 30 passées : Irène est partie");
+await doitEchouer(MARCO, "select enquete_montrer($1, $2, $3)", [partie, "irene", "rupture"], "on ne parle plus à un suspect parti");
+await fouiller(MARCO, "quai");
+verifier(etat.journal.at(-1).perdu && !etat.indices.some((i) => i.id === "douille"), "après 5 h, le quai est lavé");
+await poser(MARCO, "ferrand-soir");
+await poser(MARCO, "ferrand-qui");
+await poser(MARCO, "ferrand-marchetti");
+verifier(etat.nuit.minutes === 240, "l'aube");
+await doitEchouer(MARCO, "select enquete_poser_question($1, $2)", [partie, "ferrand-heure"], "à l'aube, plus de question");
+await doitEchouer(MARCO, "select enquete_accuser($1, $2, $3, $4, $5)", [partie, "irene", "fuite", null, "douille"], "on ne verse au dossier que son mur");
+etat = await en(MARCO, "select enquete_accuser($1, $2, $3, $4, $5)", [partie, "irene", "fuite", null, "bijoux"]);
+verifier(!etat.partie.revelee, "Marco signe à l'aube, Joséphine n'a pas encore signé");
 
 etat = await en(JO, "select enquete_etat($1)", [partie]);
-verifier(etat.autres[0].a_accuse && etat.revelation === null, "Joséphine voit qu'on a accusé, sans savoir qui");
-
-await db.exec(`update enquete_parties set echeance = now() - interval '1 minute' where id = ${partie}`);
-etat = await en(JO, "select enquete_etat($1)", [partie]);
-verifier(etat.partie.revelee && etat.revelation.solution.coupable === sol.coupable, "délai passé : révélation");
-const scores = Object.fromEntries(etat.revelation.joueurs.map((j) => [j.nom, j.score]));
-verifier(scores["Joséphine"] === 0 && scores["Jules"] >= 70 && etat.revelation.joueurs[0].nom === "Jules", `classement ${JSON.stringify(scores)}`);
+verifier(etat.autres.every((a) => a.a_accuse) && etat.revelation === null, "Joséphine voit qu'on a signé, sans savoir qui");
+await poser(JO, "sauveur-comptoir");
+etat = await en(JO, "select enquete_accuser($1, $2, $3, $4, $5)", [partie, sol.coupable, sol.mobile, null, null]);
+verifier(etat.partie.revelee && etat.revelation.solution.coupable === sol.coupable, "tout le monde a signé : révélation");
+const verdicts = Object.fromEntries(etat.revelation.joueurs.map((j) => [j.nom, j.verdict]));
+verifier(verdicts.Jules === "condamne" && verdicts["Joséphine"] === "relache" && verdicts.Marco === "erreur", `verdicts ${JSON.stringify(verdicts)}`);
+verifier(etat.revelation.joueurs.map((j) => j.nom).join() === "Jules,Joséphine,Marco", "classement par verdict");
 
 accueil = await en(JULES, "select enquete_accueil()");
-verifier(accueil.moi.resolues === 1 && accueil.moi.record >= 70 && accueil.bureaux.length === 0, "l'accueil compte l'affaire résolue");
+verifier(accueil.moi.resolues === 1 && accueil.moi.record === 120 + minutesJules && accueil.bureaux.length === 0, "l'accueil compte l'affaire résolue et le record");
 let tampons = Object.fromEntries((await en(JULES, "select enquete_tampons()")).map((t) => [t.cle, t]));
 verifier(tampons.premiere.obtenu_at && tampons.premiere.partie === partie && !tampons.premiere.vu, "tampon : première affaire");
-verifier(tampons.econome.obtenu_at && tampons.premier_table.obtenu_at, "tampons : économe, premier à table");
-verifier(!tampons.flair.obtenu_at && !tampons.tablee.obtenu_at && tampons.dix.progres === 1 && tampons.dix.sur === 10, "pas de flair à 79, dix dossiers à 1/10");
+verifier(!tampons.econome.obtenu_at && tampons.premier_table.obtenu_at && tampons.flair.obtenu_at, "tampons : dossier parfait, premier à table, pas assez rapide");
+verifier(!tampons.tablee.obtenu_at && tampons.dix.progres === 1 && tampons.dix.sur === 10, "dix dossiers à 1/10");
 verifier(tampons.associes.progres === 2 && !tampons.associes.obtenu_at, "deux associés sur trois");
 verifier(!(await en(JO, "select enquete_tampons()")).find((t) => t.cle === "premiere").obtenu_at, "Joséphine n'a rien résolu");
-await en(JULES, "select enquete_tampons_vus(array['premiere', 'econome'])");
+await en(JULES, "select enquete_tampons_vus(array['premiere', 'flair'])");
 await en(JULES, "select enquete_tampons_vus(array['premiere'])");
 tampons = Object.fromEntries((await en(JULES, "select enquete_tampons()")).map((t) => [t.cle, t]));
-verifier(tampons.premiere.vu && tampons.econome.vu && !tampons.premier_table.vu, "tampons marqués comme vus");
+verifier(tampons.premiere.vu && tampons.flair.vu && !tampons.premier_table.vu, "tampons marqués comme vus");
 assoc = await en(JULES, "select enquete_associes()");
 verifier(assoc.amis.find((a) => a.pseudo === "Joséphine").moi_devant === 1, "bilan entre associés");
 
@@ -195,4 +244,15 @@ await db.exec(`update enquete_joueurs set admin = true where user_id = '${JULES}
 await en(JULES, "select enquete_demander_affaire()");
 verifier((await en(JULES, "select enquete_accueil()")).demande_en_cours, "l'admin fait écrire une affaire");
 await doitEchouer(INCONNU, "select enquete_accueil()", [], "un compte sans agence n'a pas accès");
+// --- Ancienne règle ------------------------------------------------------
+verifier(!(await en(JULES, "select enquete_dossiers_possibles(array['Marco'])")).some((d) => d.id === 1), "l'ancienne affaire n'est plus proposée");
+await db.exec(`insert into enquete_parties (id, affaire_id, mode, cree_par, lancee_at, revelee_at) overriding system value values (900, 1, 'solo', '${JULES}', now(), now()), (901, 1, 'solo', '${JO}', now(), null)`);
+await db.exec(`insert into enquete_participants (partie_id, user_id, accuse_suspect, accuse_at, score) values (900, '${JULES}', 'ferrand', now(), 90), (901, '${JO}', null, null, null)`);
+etat = await en(JULES, "select enquete_etat(900)");
+verifier(etat.regle === 1 && etat.revelation.joueurs[0].score === 90, "une ancienne affaire close se relit");
+await doitEchouer(JO, "select enquete_etat(901)", [], "une ancienne affaire en cours est rangée");
+verifier(!(await en(JO, "select enquete_accueil()")).parties.some((p) => p.id === 901), "elle disparaît de l'accueil");
+accueil = await en(JULES, "select enquete_accueil()");
+verifier(accueil.moi.resolues === 2 && accueil.parties.find((p) => p.id === 900).regle === 1, "l'ancienne affaire résolue compte toujours");
+
 console.log("Tout est bon.");

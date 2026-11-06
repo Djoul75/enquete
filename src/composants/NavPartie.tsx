@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { EtatPartie } from "../lib/types";
-import { compteurs } from "../lib/partie";
+import { Horloge, FilDeLaNuit } from "./Horloge";
 import { heuresRestantes, useMaintenant } from "../lib/routeur";
 
 const TRACES = {
@@ -43,8 +43,9 @@ export function Icone({ nom, taille = 22, epaisseur = 1.8 }: { nom: keyof typeof
   );
 }
 
-// En-tête collé en haut de chaque écran de jeu : retour, titre, questions et
-// fouilles restantes, et le bandeau du duel quand l'autre a accusé.
+// En-tête collé en haut de chaque écran de jeu : retour, titre, l'heure de
+// la nuit (et son fil sous l'en-tête), et le bandeau du duel quand l'autre a
+// accusé.
 export function EnTete({
   etat,
   retour,
@@ -60,7 +61,6 @@ export function EnTete({
   sansTitre?: boolean; // retour avec son libellé, sans le titre de l'affaire
   dessous?: React.ReactNode;
 }) {
-  const c = compteurs(etat);
   const maintenant = useMaintenant(30_000);
   const [defile, setDefile] = useState(() => window.scrollY > 180);
   const accusateur = etat.autres.find((a) => a.a_accuse);
@@ -85,23 +85,9 @@ export function EnTete({
         <span className={`titre entete-titre${titreVisible ? " visible" : ""}`} aria-hidden={!titreVisible}>
           {etat.affaire.titre.toUpperCase()}
         </span>
-        {enJeu && (
-          <span className="machine entete-compteurs">
-            <span title="Questions restantes" aria-label={`${c.questionsRestantes} questions restantes`}>
-              <Icone nom="bulle" taille={13} epaisseur={2} />
-              {c.questionsRestantes}
-            </span>
-            <span
-              className={c.fouillesRestantes > 0 ? "rouge-trait" : undefined}
-              title="Fouilles restantes"
-              aria-label={`${c.fouillesRestantes} fouilles restantes`}
-            >
-              <Icone nom="loupe" taille={13} epaisseur={2} />
-              {c.fouillesRestantes}
-            </span>
-          </span>
-        )}
+        {enJeu && <Horloge etat={etat} />}
       </div>
+      {enJeu && <FilDeLaNuit etat={etat} />}
       {dessous}
       {enJeu && accusateur && etat.partie.echeance && (
         <a href={`#/p/${etat.partie.id}/telegramme`} className="machine bandeau-duel">
@@ -125,7 +111,7 @@ const ONGLETS = [
 export type Onglet = (typeof ONGLETS)[number]["vue"];
 
 export function BarreOnglets({ etat, actif, nouveaux = 0 }: { etat: EtatPartie; actif: Onglet; nouveaux?: number }) {
-  const indices = new Set(etat.journal.map((e) => e.indice?.id).filter(Boolean)).size;
+  const indices = etat.indices.length;
   return (
     <nav className="onglets" aria-label="Enquête">
       {ONGLETS.map((o) => (

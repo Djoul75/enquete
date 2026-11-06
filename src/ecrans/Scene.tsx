@@ -2,17 +2,18 @@ import { useEffect, useState } from "react";
 import type { EtatPartie } from "../lib/types";
 import { Visage } from "../composants/Visage";
 import { Decor } from "../composants/Decor";
+import { Cigarette } from "../composants/Cigarette";
+import { LaNuit } from "../composants/LaNuit";
 import { decorDe, visageDe } from "../lib/visuels";
 import { BarreOnglets, EnTete } from "../composants/NavPartie";
-import { aUnePiste, compteurs, echangesAvec, nomCourt, pluriel } from "../lib/partie";
+import { aUnePiste, echangesAvec, etatSuspect, heureNuit, minuteEvenement, nomCourt, pluriel, pronom } from "../lib/partie";
 
 export function Scene({ etat, nouveaux }: { etat: EtatPartie; nouveaux: number }) {
   const pub = etat.affaire.public;
-  const c = compteurs(etat);
   const cleRecit = `enquete-recit-${etat.partie.id}`;
   // Le récit s'affiche en entier à la première visite, replié ensuite.
   const [recitOuvert, setRecitOuvert] = useState(() => !localStorage.getItem(cleRecit));
-  const fouilles = new Set(etat.journal.filter((e) => e.type === "fouille").map((e) => e.ref));
+  const fouilles = new Map(etat.journal.filter((e) => e.type === "fouille").map((e) => [e.ref, e]));
 
   useEffect(() => {
     localStorage.setItem(cleRecit, "1");
@@ -42,23 +43,31 @@ export function Scene({ etat, nouveaux }: { etat: EtatPartie; nouveaux: number }
           <span className="machine" style={{ fontSize: 12 }}>{recitOuvert ? "REPLIER ↑" : "RELIRE LE RÉCIT ↓"}</span>
         </button>
 
+        <LaNuit etat={etat} />
+
         <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="etiquette">Suspects</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span className="etiquette">Suspects</span>
+            <span className="machine" style={{ fontSize: 11, color: "var(--gris)" }}>LA CIGARETTE, C'EST LEUR PATIENCE</span>
+          </div>
           <div className="grille-2">
             {pub.suspects.map((s, i) => {
               const n = echangesAvec(etat, s.id).length;
-              const piste = aUnePiste(etat, s.id);
+              const statut = etatSuspect(etat, s.id);
+              const piste = statut === "libre" && aUnePiste(etat, s.id);
+              const e = pronom(etat, s.id) === "elle" ? "E" : "";
+              const ligne =
+                statut === "parti" ? `PARTI${e}` : statut === "braque" ? `BRAQUÉ${e}` : piste ? "NOUVELLE PISTE" : n > 0 ? pluriel(n, "ÉCHANGE") : "PAS ENCORE VU" + e;
               return (
-                <a key={s.id} href={`#/p/${etat.partie.id}/suspect/${s.id}`} className="carte-suspect" style={{ animationDelay: `${i * 50}ms` }}>
-                  <span style={{ width: 56, flexShrink: 0 }}>
+                <a key={s.id} href={`#/p/${etat.partie.id}/suspect/${s.id}`} className={`carte-suspect ${statut}`} style={{ animationDelay: `${i * 50}ms` }}>
+                  <span className="carte-suspect-visage">
                     <Visage v={visageDe(s)} />
                   </span>
                   <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, fontSize: 13, lineHeight: 1.25 }}>
                     <b style={{ overflowWrap: "break-word" }}>{nomCourt(s.nom)}</b>
                     <span style={{ color: "var(--gris-clair)" }}>{s.role}</span>
-                    <span className="machine" style={{ fontSize: 11, marginTop: 3, color: piste ? "var(--rouge-texte)" : "var(--gris)" }}>
-                      {piste ? "NOUVELLE PISTE" : n > 0 ? pluriel(n, "QUESTION").toUpperCase() : "PAS ENCORE VU"}
-                    </span>
+                    <Cigarette patience={etat.nuit.patience[s.id] ?? 0} max={s.patience} etat={statut} taille="petite" nom={nomCourt(s.nom)} />
+                    <span className="machine" style={{ fontSize: 11, color: piste || statut === "braque" ? "var(--rouge-texte)" : "var(--gris)" }}>{ligne}</span>
                   </span>
                   {piste && <span className="pastille" style={{ top: 8, right: 8 }} />}
                 </a>
@@ -70,25 +79,26 @@ export function Scene({ etat, nouveaux }: { etat: EtatPartie; nouveaux: number }
         <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <span className="etiquette">Lieux</span>
-            <span className="machine" style={{ fontSize: 12, color: c.fouillesRestantes > 0 ? "var(--rouge-texte)" : "var(--gris)" }}>
-              {c.fouillesRestantes > 0 ? pluriel(c.fouillesRestantes, "FOUILLE RESTANTE", "FOUILLES RESTANTES") : "PLUS DE FOUILLE"}
-            </span>
+            <span className="machine" style={{ fontSize: 11, color: "var(--gris)" }}>{pub.horloge.couts.fouille} MIN PAR FOUILLE</span>
           </div>
           <div className="grille-2">
             {pub.lieux.map((l) => {
-              const fait = fouilles.has(l.id);
-              const ferme = !fait && c.fouillesRestantes <= 0;
+              const f = fouilles.get(l.id);
+              const evenement = pub.evenements.find((e) => e.lieu_perdu === l.id);
+              const perdu = !f && evenement && minuteEvenement(pub.horloge, evenement) <= etat.nuit.minutes;
               return (
-                <a
-                  key={l.id}
-                  href={`#/p/${etat.partie.id}/lieu/${l.id}`}
-                  className={`carte-lieu${fait ? " fait" : ""}${ferme ? " ferme" : ""}`}
-                >
+                <a key={l.id} href={`#/p/${etat.partie.id}/lieu/${l.id}`} className={`carte-lieu${f ? " fait" : ""}${perdu ? " ferme" : ""}`}>
                   <span style={{ display: "block", height: 76, overflow: "hidden" }}>
-                    <Decor id={decorDe(l)} cadrage="slice" assombri={fait || ferme} />
+                    <Decor id={decorDe(l)} cadrage="slice" assombri={!!f || !!perdu} />
                   </span>
                   <span className="titre" style={{ padding: "7px 9px 6px", fontSize: 18 }}>{l.nom.toUpperCase()}</span>
-                  {fait && <span className="machine tampon-carte">FOUILLÉ · RELIRE</span>}
+                  {f ? (
+                    <span className="machine tampon-carte">FOUILLÉ · {heureNuit(pub.horloge, f.minute).toUpperCase()}</span>
+                  ) : perdu ? (
+                    <span className="machine tampon-carte gris">TROP TARD</span>
+                  ) : evenement ? (
+                    <span className="machine cout-carte rouge">AVANT {heureNuit(pub.horloge, minuteEvenement(pub.horloge, evenement)).toUpperCase()}</span>
+                  ) : null}
                 </a>
               );
             })}

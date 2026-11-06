@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { aller, type Route } from "../lib/routeur";
-import type { EtatPartie } from "../lib/types";
+import type { EtatAncien, EtatPartie } from "../lib/types";
 import { indicesTrouves } from "../lib/partie";
 import { Scene } from "./Scene";
 import { Lieu } from "./Lieu";
@@ -12,13 +12,17 @@ import { Accusation } from "./Accusation";
 import { Telegramme } from "./Telegramme";
 import { Attente } from "./Attente";
 import { Revelation } from "./Revelation";
+import { RevelationAncienne } from "./RevelationAncienne";
+import { AlerteNuit } from "../composants/AlerteNuit";
+import { alerteEnAttente } from "../lib/alertes";
 
 type RoutePartie = Extract<Route, { ecran: "partie" }>;
 
 export type Actions = {
   poser: (question: string) => Promise<void>;
+  montrer: (suspect: string, piece: string) => Promise<void>;
   fouiller: (lieu: string) => Promise<void>;
-  accuser: (suspect: string, mobile: string, preuve: string) => Promise<void>;
+  accuser: (suspect: string, mobile: string, occasion: string | null, preuve: string | null) => Promise<void>;
   sauverNotes: (notes: string) => Promise<void>;
   occupe: boolean;
   erreur: string | null;
@@ -28,7 +32,9 @@ export type Actions = {
 const RANG: Record<RoutePartie["vue"], number> = { scene: 0, suspect: 0.5, lieu: 0.5, mur: 1, carnet: 2, accuser: 3, telegramme: 0 };
 
 export function Partie({ route }: { route: RoutePartie }) {
-  const [etat, setEtat] = useState<EtatPartie | null>(null);
+  const [etat, setEtat] = useState<EtatPartie | EtatAncien | null>(null);
+  // Relu après une alerte de la nuit (événement, aube) fermée.
+  const [, setAlertesLues] = useState(0);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const cleMur = `enquete-mur-vu-${route.partie}`;
@@ -58,7 +64,7 @@ export function Partie({ route }: { route: RoutePartie }) {
     vuePrecedente.current = route.vue;
   }, [route.vue]);
 
-  const nbIndices = etat ? indicesTrouves(etat).length : 0;
+  const nbIndices = etat?.regle === 2 ? indicesTrouves(etat).length : 0;
   const marquerMurVu = useCallback(() => {
     localStorage.setItem(cleMur, String(nbIndices));
     setMurVu(nbIndices);
@@ -79,6 +85,8 @@ export function Partie({ route }: { route: RoutePartie }) {
     );
   }
 
+  if (etat.regle === 1) return <RevelationAncienne etat={etat} />;
+
   async function agir(action: () => Promise<EtatPartie>) {
     setOccupe(true);
     setErreur(null);
@@ -92,10 +100,11 @@ export function Partie({ route }: { route: RoutePartie }) {
 
   const actions: Actions = {
     poser: (q) => agir(() => api.poserQuestion(route.partie, q)),
+    montrer: (s, p) => agir(() => api.montrer(route.partie, s, p)),
     fouiller: (l) => agir(() => api.fouiller(route.partie, l)),
-    accuser: (s, m, p) => agir(() => api.accuser(route.partie, s, m, p)),
+    accuser: (s, m, o, p) => agir(() => api.accuser(route.partie, s, m, o, p)),
     // L'état local suit, pour retrouver ses notes en revenant au carnet.
-    sauverNotes: (n) => api.sauverNotes(route.partie, n).then(() => setEtat((e) => e && { ...e, moi: { ...e.moi, notes: n } })),
+    sauverNotes: (n) => api.sauverNotes(route.partie, n).then(() => setEtat((e) => (e?.regle === 2 ? { ...e, moi: { ...e.moi, notes: n } } : e))),
     occupe,
     erreur,
   };
@@ -125,18 +134,40 @@ export function Partie({ route }: { route: RoutePartie }) {
   }
 
   const nouveaux = Math.max(0, nbIndices - murVu);
-  switch (route.vue) {
-    case "suspect":
-      return <Interrogatoire key={route.suspect} etat={etat} suspectId={route.suspect} actions={actions} />;
-    case "lieu":
-      return <Lieu etat={etat} lieuId={route.lieu} actions={actions} />;
-    case "mur":
-      return <Mur etat={etat} dejaVus={murVu} onVu={marquerMurVu} />;
-    case "carnet":
-      return <Carnet etat={etat} actions={actions} />;
-    case "accuser":
-      return <Accusation etat={etat} actions={actions} />;
-    default:
-      return <Scene etat={etat} nouveaux={nouveaux} />;
-  }
+  const ecran = (() => {
+    switch (route.vue) {
+      case "suspect":
+        return <Interrogatoire key={route.suspect} etat={etat} suspectId={route.suspect} actions={actions} />;
+      case "lieu":
+        return <Lieu etat={etat} lieuId={route.lieu} actions={actions} />;
+      case "mur":
+        return <Mur etat={etat} dejaVus={murVu} onVu={marquerMurVu} />;
+      case "carnet":
+        return <Carnet etat={etat} actions={actions} />;
+      case "accuser":
+        return <Accusation etat={etat} actions={actions} />;
+      default:
+        return <Scene etat={etat} nouveaux={nouveaux} />;
+    }
+  })();
+
+  // Un événement de la nuit ou l'aube passe devant l'écran en cours. On
+  // attend la fin d'une action (la réponse s'écrit d'abord) pour l'afficher.
+  const alerte = !occupe && route.vue !== "accuser" ? alerteEnAttente(etat) : null;
+  return (
+    <>
+      {ecran}
+      {alerte && (
+        <AlerteNuit
+          key={alerte.type === "aube" ? "aube" : alerte.e.heure}
+          etat={etat}
+          alerte={alerte}
+          onLu={(versAccusation) => {
+            setAlertesLues((n) => n + 1);
+            if (versAccusation) aller(`/p/${etat.partie.id}/accuser`);
+          }}
+        />
+      )}
+    </>
+  );
 }

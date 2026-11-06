@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { EtatPartie } from "../lib/types";
 import { BarreOnglets, EnTete } from "../composants/NavPartie";
-import { indicesTrouves, nomCourt } from "../lib/partie";
+import { heureNuit, indicesTrouves, nomCourt } from "../lib/partie";
 
 const ROTATIONS = [-3, 2, 4, -2, 1, -4, 3, -1];
 
@@ -75,13 +75,13 @@ export function Mur({ etat, dejaVus, onVu, lectureSeule }: { etat: EtatPartie; d
                 <span className="punaise" />
                 {indice.texte}
                 {lectureSeule ? (
-                  <span className="source">— {indice.source.toUpperCase()}</span>
+                  <span className="source">— {indice.source.toUpperCase()} · {heureNuit(pub.horloge, indice.minute).toUpperCase()}</span>
                 ) : (
                   <a
                     className="source"
                     href={indice.type === "fouille" ? `#/p/${etat.partie.id}/lieu/${indice.cible}` : `#/p/${etat.partie.id}/suspect/${indice.cible}`}
                   >
-                    — {indice.source.toUpperCase()} →
+                    — {indice.source.toUpperCase()} · {heureNuit(pub.horloge, indice.minute).toUpperCase()} →
                   </a>
                 )}
               </div>

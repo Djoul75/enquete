@@ -2,7 +2,7 @@
 //   node worker/worker.mjs          chaque minute : affaires demandées par le
 //                                   bouton, clôtures, notifications
 //   node worker/worker.mjs hebdo    le lundi : l'affaire de la semaine
-//   node worker/worker.mjs importer affaires/*.json
+//   node worker/worker.mjs importer affaires/v2/*.json
 //                                   range des affaires écrites à la main
 //
 // La base du jeu (adresse, clé service_role) est dans ~/enquete/.env. La clé
@@ -153,13 +153,13 @@ async function notificationsParties(noms) {
 async function ranger(affaire, source) {
   const erreurs = verifier(affaire);
   if (erreurs.length) throw new Error(`${affaire.titre} : ${erreurs.join(" ; ")}`);
-  const [ligne] = await verif(db.from("enquete_affaires").insert({ titre: affaire.titre, public: affaire.public, source }).select("id"));
+  const [ligne] = await verif(db.from("enquete_affaires").insert({ titre: affaire.titre, public: affaire.public, source, regle: 2 }).select("id"));
   await verif(db.from("enquete_affaires_secret").insert({ affaire_id: ligne.id, secret: affaire.secret }));
   return ligne.id;
 }
 
 async function ecrireEtRanger(source) {
-  const deja = await verif(db.from("enquete_affaires").select("titre, public"));
+  const deja = await verif(db.from("enquete_affaires").select("titre, public").eq("regle", 2));
   const affaire = await ecrireAffaire({
     dejaEcrites: deja.map((a) => ({ titre: a.titre, cadre: `${a.public.cadre.ville}, ${a.public.cadre.annee}` })),
   });
@@ -189,7 +189,7 @@ const [mode, ...fichiers] = process.argv.slice(2);
 if (mode === "hebdo") {
   await ecrireEtRanger("hebdo");
 } else if (mode === "importer") {
-  const existantes = new Set((await verif(db.from("enquete_affaires").select("titre"))).map((a) => a.titre));
+  const existantes = new Set((await verif(db.from("enquete_affaires").select("titre").eq("regle", 2))).map((a) => a.titre));
   for (const f of fichiers) {
     const affaire = charger(f);
     if (existantes.has(affaire.titre)) {

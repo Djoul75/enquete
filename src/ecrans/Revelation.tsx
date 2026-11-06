@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EtatPartie } from "../lib/types";
-import { indicesTrouves } from "../lib/partie";
+import { finDeNuit, heureNuit, indicesTrouves, VERDICTS } from "../lib/partie";
 import { api } from "../lib/api";
 import { aller } from "../lib/routeur";
 import { mouvementReduit } from "../lib/effets";
@@ -20,6 +20,7 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [partage, setPartage] = useState(false);
+  const [nuitOuverte, setNuitOuverte] = useState(false);
   const { tampons, nouveaux, marquerVus } = useTampons();
   const moi = r.joueurs.find((j) => j.moi);
   const carte = useMemo<DonneesCarte | null>(() => {
@@ -30,14 +31,18 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
       ville: pub.cadre?.ville,
       annee: pub.cadre?.annee,
       pseudo: moi.nom,
-      score: moi.score,
-      rang: 1 + r.joueurs.filter((j) => j.score > moi.score).length,
+      verdict: moi.verdict,
+      heure: moi.minutes !== null ? heureNuit(pub.horloge, moi.minutes) : null,
+      aube: heureNuit(pub.horloge, etat.nuit.aube),
+      fin: finDeNuit(pub.horloge).court.toLowerCase(),
+      avance: moi.minutes !== null ? etat.nuit.aube - moi.minutes : 0,
+      rang: 1 + r.joueurs.indexOf(moi),
       joueurs: r.joueurs.length,
       coupable: moi.suspect ? moi.suspect === sol.coupable : null,
       mobile: moi.mobile === sol.mobile,
+      occasion: !!moi.occasion && sol.occasion.includes(moi.occasion),
       preuve: !!moi.preuve && sol.preuves.includes(moi.preuve),
-      questions: moi.questions,
-      maxQuestions: etat.limites.questions,
+      braques: moi.braques,
     };
   }, [moi, etat, pub, r, sol]);
   // Le journal arrive en tournoyant, comme dans les vieux films, la première fois.
@@ -45,13 +50,17 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
   const [tourne] = useState(() => !localStorage.getItem(cle) && !mouvementReduit());
   useEffect(() => localStorage.setItem(cle, "1"), [cle]);
 
-  // Colonnes du tableau des preuves : moi d'abord, puis les autres.
+  // Colonnes du tableau des pièces : moi d'abord, puis les autres.
   const colonnes = r.joueurs
     .slice()
     .sort((a, b) => Number(b.moi) - Number(a.moi))
     .map((j) => ({ nom: j.moi ? "TOI" : j.nom.toUpperCase(), trouves: j.moi ? mesIndices : new Set(j.indices) }));
   // À six, les colonnes se serrent pour laisser de la place à l'indice.
   const largeur = colonnes.length > 3 ? 40 : 64;
+  const pieces = [
+    ...sol.occasion.map((id) => ({ id, role: "OCCASION" })),
+    ...sol.preuves.map((id) => ({ id, role: "PREUVE" })),
+  ];
 
   async function revanche() {
     setOccupe(true);
@@ -84,27 +93,26 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(2, r.joueurs.length)}, minmax(0, 1fr))`, gap: 10 }}>
           {r.joueurs.map((j, i) => {
             const juste = j.suspect === sol.coupable;
-            const premier = i === 0 && j.score > 0;
+            const premier = i === 0 && r.joueurs.length > 1 && !!j.verdict;
+            const v = j.verdict ? VERDICTS[j.verdict] : null;
             return (
-              <div
-                key={j.nom}
-                className="carte-score"
-                style={{
-                  background: premier ? "var(--encre)" : undefined,
-                  color: premier ? "var(--papier)" : undefined,
-                  border: premier ? undefined : "2px solid var(--encre)",
-                  animationDelay: `${(tourne ? 1300 : 0) + i * 150}ms`,
-                }}
-              >
-                <span className="machine" style={{ fontSize: 12, opacity: 0.75 }}>{j.moi ? "TOI" : j.nom.toUpperCase()}</span>
-                <span className="titre" style={{ fontSize: 24, lineHeight: 1, textDecoration: juste || !j.suspect ? undefined : "line-through" }}>
-                  {j.suspect ? nom(j.suspect).toUpperCase() : "PAS D'ACCUSATION"}
+              <div key={j.nom} className={`carte-verdict${premier ? " premier" : ""}`} style={{ animationDelay: `${(tourne ? 1300 : 0) + i * 150}ms` }}>
+                <span className="machine" style={{ fontSize: 12, opacity: 0.75 }}>
+                  {r.joueurs.length > 1 ? `${i + 1}${i === 0 ? "ER" : "E"} · ` : ""}
+                  {j.moi ? "TOI" : j.nom.toUpperCase()}
                 </span>
-                <span className="titre" style={{ fontSize: 30, color: premier ? "var(--rouge-texte)" : undefined }}>{j.score} PTS</span>
+                <span className="titre" style={{ fontSize: 22, lineHeight: 1, textDecoration: juste || !j.suspect ? undefined : "line-through" }}>
+                  {j.suspect ? nom(j.suspect).toUpperCase() : "PAS DE DOSSIER"}
+                </span>
+                <span
+                  className={`tampon-verdict ${j.verdict ?? "aucun"}`}
+                  style={{ animationDelay: `${(tourne ? 1600 : 300) + i * 150}ms` }}
+                >
+                  {v ? v.lignes.map((l) => <span key={l}>{l}</span>) : <span>DÉLAI DÉPASSÉ</span>}
+                </span>
                 <span className="machine" style={{ fontSize: 11, lineHeight: 1.35 }}>
-                  {j.suspect
-                    ? `${juste ? "RÉSOLUE" : "CLASSÉE"} · MOBILE ${j.mobile === sol.mobile ? "JUSTE" : "FAUX"} · ${j.questions} Q.`
-                    : "DÉLAI DÉPASSÉ"}
+                  {j.minutes !== null ? `SIGNÉ À ${heureNuit(pub.horloge, j.minutes).toUpperCase()}` : "PAS SIGNÉ"}
+                  {j.braques > 0 ? ` · ${j.braques} BRAQUÉ${j.braques > 1 ? "S" : ""}` : ""}
                 </span>
               </div>
             );
@@ -113,14 +121,17 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
 
         <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--encre)", paddingTop: 10 }}>
           <div className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, ${largeur}px)`, paddingTop: 0 }}>
-            <span className="machine" style={{ fontSize: 12 }}>LES PREUVES</span>
+            <span className="machine" style={{ fontSize: 12 }}>LES PIÈCES QUI COMPTAIENT</span>
             {colonnes.map((c) => (
               <span key={c.nom} className="machine" style={{ fontSize: 10, textAlign: "center", overflowWrap: "anywhere" }}>{c.nom}</span>
             ))}
           </div>
-          {sol.preuves.map((id) => (
+          {pieces.map(({ id, role }) => (
             <div key={id} className="ligne-preuve" style={{ gridTemplateColumns: `minmax(0, 1fr) repeat(${colonnes.length}, ${largeur}px)` }}>
-              <span>{r.indices[id]?.texte}</span>
+              <span>
+                <span className="machine" style={{ fontSize: 10, color: role === "PREUVE" ? "var(--rouge-sombre)" : "#55524c" }}>{role} · </span>
+                {r.indices[id]?.texte}
+              </span>
               {colonnes.map((c) => (
                 <span key={c.nom} style={{ textAlign: "center", fontWeight: 700, color: c.trouves.has(id) ? undefined : "var(--rouge-sombre)" }}>
                   {c.trouves.has(id) ? "✓" : "✗"}
@@ -133,13 +144,46 @@ export function Revelation({ etat }: { etat: EtatPartie }) {
           </div>
         </div>
 
+        <div className="ta-nuit">
+          <button className="ta-nuit-tete" onClick={() => setNuitOuverte(!nuitOuverte)} aria-expanded={nuitOuverte}>
+            <span className="titre" style={{ fontSize: 24 }}>TA NUIT, MINUTE PAR MINUTE</span>
+            <span className="machine" style={{ fontSize: 12 }}>{nuitOuverte ? "▴" : "▾"}</span>
+          </button>
+          <div className="volet-corps" data-ouvert={nuitOuverte}>
+            <div>
+              <ol className="chrono-nuit">
+                {etat.journal.map((e) => (
+                  <li key={`${e.type}:${e.ref}`}>
+                    <span className="machine">{heureNuit(pub.horloge, e.minute)}</span>
+                    <span>
+                      {e.type === "fouille"
+                        ? `Fouille : ${pub.lieux.find((l) => l.id === e.ref)?.nom.toLowerCase()}${e.indice ? "" : ", rien"}`
+                        : e.type === "montrer"
+                          ? `Montré à ${nom(e.suspect ?? null)} : ${e.piece?.texte}`
+                          : `${nom(e.suspect ?? null)} : « ${e.question} »`}
+                      {e.braque && <b> Braqué.</b>}
+                      {e.craque && <b> A craqué.</b>}
+                    </span>
+                  </li>
+                ))}
+                {moi?.minutes != null && (
+                  <li>
+                    <span className="machine">{heureNuit(pub.horloge, moi.minutes)}</span>
+                    <b>Dossier signé.</b>
+                  </li>
+                )}
+              </ol>
+            </div>
+          </div>
+        </div>
+
         {erreur && <p className="erreur">{erreur}</p>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
           {carte && (
             <button className="gros-bouton rouge-fond" onClick={() => setPartage(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
               PARTAGER MA UNE
-              <span style={{ fontFamily: "var(--texte)", fontSize: 12, letterSpacing: 0 }}>ton score en image, sans dévoiler le coupable</span>
+              <span style={{ fontFamily: "var(--texte)", fontSize: 12, letterSpacing: 0 }}>ton verdict en image, sans dévoiler le coupable</span>
             </button>
           )}
           <a href={`#/p/${etat.partie.id}/carnet`} className="gros-bouton contour" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>

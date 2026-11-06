@@ -2,20 +2,26 @@
 // dessinée sur un canvas en 1080 × 1350, le format portrait des réseaux.
 // Elle ne dévoile rien de l'affaire : ni coupable, ni mobile, ni preuve.
 
+import type { Verdict } from "./types";
+
 export type DonneesCarte = {
   partie: number;
   titre: string;
   ville?: string;
   annee?: number | string;
   pseudo: string;
-  score: number;
+  verdict: Verdict | null; // null : pas de dossier signé
+  heure: string | null; // heure de signature dans la nuit, « 3 h 55 »
+  aube: string; // l'heure de fin, « 6 h 00 »
+  fin: string; // « l'aube », « le nyassa »…
+  avance: number; // minutes d'avance sur la fin
   rang: number;
   joueurs: number;
   coupable: boolean | null; // null : pas d'accusation
   mobile: boolean;
+  occasion: boolean;
   preuve: boolean;
-  questions: number;
-  maxQuestions: number;
+  braques: number;
 };
 
 const L = 432;
@@ -30,9 +36,15 @@ const TEXTE = '"Courier Prime", monospace';
 const SITE = "AGENCENOIRE.FR";
 
 export function verdict(d: DonneesCarte): string {
-  if (d.coupable === null) return "ARRIVE TROP TARD";
-  if (d.score >= 50) return "TIENT SON COUPABLE";
-  return "REPART BREDOUILLE";
+  if (d.verdict === "condamne") return "FAIT CONDAMNER SON COUPABLE";
+  if (d.verdict === "relache") return "TENAIT LE COUPABLE, PAS LA PREUVE";
+  if (d.verdict === "erreur") return "ENVOIE UN INNOCENT AU BAGNE";
+  return "ARRIVE TROP TARD";
+}
+
+function duree(m: number): string {
+  const h = Math.floor(m / 60);
+  return h ? `${h} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
 }
 
 function chapeau(d: DonneesCarte): string {
@@ -41,7 +53,8 @@ function chapeau(d: DonneesCarte): string {
     return `${d.joueurs} agences sur la même affaire. ${tete}`;
   }
   if (d.coupable === null) return "Seule sur l'affaire, et le délai a filé.";
-  return `Seule sur l'affaire, en ${d.questions} question${d.questions > 1 ? "s" : ""} sur ${d.maxQuestions}.`;
+  const braques = d.braques ? ` ${d.braques} suspect${d.braques > 1 ? "s" : ""} braqué${d.braques > 1 ? "s" : ""} en route.` : " Sans braquer personne.";
+  return d.avance > 0 ? `Seule sur l'affaire, dossier bouclé ${duree(d.avance)} avant l'heure.${braques}` : `Seule sur l'affaire, jusqu'à la dernière minute.${braques}`;
 }
 
 // Découpe en lignes ; chaque mot garde sa couleur.
@@ -130,8 +143,8 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
   }
   ctx.fillStyle = ENCRE;
 
-  // Les cases se calent au-dessus du pied de page ; le score se centre
-  // dans la place qui reste sous le gros titre.
+  // Les cases se calent au-dessus du pied de page ; l'heure de signature se
+  // centre dans la place qui reste sous le gros titre.
   const yc = H - 52 - 74;
   const libre = yc - (y - taille * 0.9);
   const haut = y - taille * 0.9 + Math.max(16, (libre - 104) / 2);
@@ -139,10 +152,14 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
   ctx.lineWidth = 2;
   ctx.strokeRect(G + 1, haut + 1, larg - 2, 104);
   ctx.textAlign = "center";
-  ctx.font = `84px ${TITRE}`;
-  ctx.fillText(String(d.score), G + larg / 2, haut + 76);
+  const heure = (d.heure ?? d.aube).toUpperCase();
+  for (let t = 76; t >= 40; t -= 4) {
+    ctx.font = `${t}px ${TITRE}`;
+    if (ctx.measureText(heure).width <= larg - 20) break;
+  }
+  ctx.fillText(heure, G + larg / 2, haut + 74);
   ctx.font = `11px ${MACHINE}`;
-  ctx.fillText("P O I N T S", G + larg / 2, haut + 94);
+  ctx.fillText(d.heure ? "D O S S I E R   S I G N É" : "S I G N É   À   L A   F I N", G + larg / 2, haut + 94);
 
   const xd = G + larg + 14;
   ctx.textAlign = "left";
@@ -151,10 +168,11 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
   ctx.font = `13px ${TEXTE}`;
   texteEnLignes(ctx, chapeau(d), larg).slice(0, 5).forEach((l, i) => ctx.fillText(l, xd, haut + 44 + i * 17));
 
-  // Les quatre cases : rouge pleine si juste, pointillés sinon.
+  // Les quatre cases du dossier : rouge pleine si juste, pointillés sinon.
   const cases = [
     { nom: "QUI", ok: d.coupable === true },
     { nom: "POURQUOI", ok: d.coupable !== null && d.mobile },
+    { nom: "L'OCCASION", ok: d.coupable !== null && d.occasion },
     { nom: "LA PREUVE", ok: d.coupable !== null && d.preuve },
   ];
   const lc = (D - G - 24) / 4;
@@ -173,14 +191,6 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
     ctx.textAlign = "center";
     ctx.fillText(c.nom, x + lc / 2, yc + 50);
   });
-  const xq = G + 3 * (lc + 8);
-  ctx.fillRect(xq, yc, lc, 34);
-  ctx.fillStyle = PAPIER;
-  ctx.font = `22px ${TITRE}`;
-  ctx.fillText(`${d.questions}/${d.maxQuestions}`, xq + lc / 2, yc + 25);
-  ctx.fillStyle = ENCRE;
-  ctx.font = `10px ${MACHINE}`;
-  ctx.fillText("QUESTIONS", xq + lc / 2, yc + 50);
 
   // Pied de page.
   ctx.fillRect(G, H - 52, D - G, 1);
@@ -207,7 +217,7 @@ export async function dessinerCarte(d: DonneesCarte): Promise<Blob> {
 // Partage natif (iPhone, Android) avec l'image ; sinon, téléchargement.
 export async function partagerCarte(blob: Blob, d: DonneesCarte): Promise<"partage" | "telecharge" | "annule"> {
   const fichier = new File([blob], `agence-noire-${d.partie}.png`, { type: "image/png" });
-  const texte = `${d.titre} : ${d.score} points. À ton tour, privé : https://agencenoire.fr/`;
+  const texte = `${d.titre} : ${verdict(d).toLowerCase()}${d.heure ? `, dossier signé à ${d.heure}` : ""}. À ton tour, privé : https://agencenoire.fr/`;
   if (navigator.canShare?.({ files: [fichier] })) {
     try {
       await navigator.share({ files: [fichier], text: texte });

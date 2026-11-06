@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { dessinerCarte, partagerCarte, type DonneesCarte } from "../lib/carte";
+import { dessinerCarte, partagerCarte, verdict, type DonneesCarte } from "../lib/carte";
 
 // Plein écran : la une prête à partager. L'image est dessinée à l'ouverture,
 // pour que le bouton lance le partage du téléphone sans attendre (iPhone
@@ -34,7 +34,7 @@ export function PartageUne({ donnees, onFermer }: { donnees: DonneesCarte; onFer
         <button className="lien-retour" onClick={onFermer}>FERMER</button>
       </div>
       <div className="partage-image">
-        {image ? <img src={image.url} alt={`Une : ${donnees.titre}, ${donnees.score} points`} /> : <span className="reflet" style={{ width: "100%", aspectRatio: "4 / 5" }} />}
+        {image ? <img src={image.url} alt={`Une : ${donnees.titre}, ${verdict(donnees).toLowerCase()}`} /> : <span className="reflet" style={{ width: "100%", aspectRatio: "4 / 5" }} />}
       </div>
       {message && <p className="petit" style={{ margin: 0, textAlign: "center", color: "var(--gris-clair)" }}>{message}</p>}
       <button className="gros-bouton papier-fond" onClick={partager} disabled={!image}>PARTAGER MA UNE</button>

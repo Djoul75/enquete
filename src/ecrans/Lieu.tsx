@@ -5,16 +5,19 @@ import { Decor } from "../composants/Decor";
 import { Icone } from "../composants/NavPartie";
 import { Visage } from "../composants/Visage";
 import { decorDe, visageDe } from "../lib/visuels";
-import { compteurs, nomCourt, questionsDebloquees } from "../lib/partie";
+import { aube, heureNuit, minuteEvenement, nomCourt, questionsDebloquees } from "../lib/partie";
+import { Horloge } from "../composants/Horloge";
 import { remplacer } from "../lib/routeur";
 import { mouvementReduit, useGlisser, vibrer } from "../lib/effets";
 
 // Un lieu en plein écran. Avant la fouille, une lampe torche balaie le décor
 // (et suit le doigt) ; après, le résultat s'affiche sur place avec l'indice
-// épinglé et les questions qu'il débloque.
+// épinglé et les questions qu'il débloque. Une fouille prend une demi-heure
+// de la nuit ; un lieu peut être vidé à heure fixe (le quai lavé à 5 h).
 export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: string; actions: Actions }) {
   const pub = etat.affaire.public;
-  const c = compteurs(etat);
+  const couts = pub.horloge.couts;
+  const fini = aube(etat);
   const rang = Math.max(0, pub.lieux.findIndex((l) => l.id === lieuId));
   const lieu = pub.lieux[rang];
   const entree = etat.journal.find((e) => e.type === "fouille" && e.ref === lieu.id);
@@ -49,6 +52,9 @@ export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: stri
   }
 
   const debloquees = entree?.indice ? questionsDebloquees(etat, entree.indice.id) : [];
+  const evenement = pub.evenements.find((e) => e.lieu_perdu === lieu.id);
+  const minuteEvt = evenement ? minuteEvenement(pub.horloge, evenement) : null;
+  const perdu = minuteEvt !== null && minuteEvt <= etat.nuit.minutes;
 
   return (
     <main className="ecran plein" {...glisser}>
@@ -64,8 +70,8 @@ export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: stri
         <a href={`#/p/${partie}`} className="bouton-rond" style={{ position: "absolute", left: 12, top: "calc(8px + env(safe-area-inset-top))" }} aria-label="Fermer et revenir à la scène">
           <Icone nom="fermer" taille={20} epaisseur={2} />
         </a>
-        <span className="machine" style={{ position: "absolute", right: 16, top: "calc(20px + env(safe-area-inset-top))", fontSize: 12, background: "var(--encre)", padding: "3px 8px", zIndex: 2 }}>
-          LIEU {rang + 1} / {pub.lieux.length}
+        <span style={{ position: "absolute", right: 12, top: "calc(8px + env(safe-area-inset-top))", background: "var(--encre)", padding: "4px 10px 4px 6px", zIndex: 2, display: "flex" }}>
+          <Horloge etat={etat} />
         </span>
         {entree && <span className={`machine tampon-fouille${vientDeFouiller ? " claque" : ""}`}>FOUILLÉ</span>}
       </div>
@@ -76,7 +82,11 @@ export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: stri
 
         {entree ? (
           <>
+            <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)", marginTop: -8 }}>FOUILLÉ À {heureNuit(pub.horloge, entree.minute).toUpperCase()}</span>
             <p style={{ margin: 0, fontSize: 15 }} className={vientDeFouiller ? "apparait" : undefined}>{entree.texte}</p>
+            {!entree.indice && (
+              <span className={`machine rien-trouve${vientDeFouiller ? " apparait" : ""}`} style={{ animationDelay: "350ms" }}>RIEN À ÉPINGLER</span>
+            )}
             {entree.indice && (
               <div className={`note-mur grande${vientDeFouiller ? " epingle" : ""}`} style={{ animationDelay: "350ms" }}>
                 <span className="punaise" />
@@ -109,8 +119,15 @@ export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: stri
         ) : (
           <>
             <p style={{ margin: 0, fontSize: 15, color: "var(--gris-clair)" }}>
-              {enCours ? "Tu fouilles…" : c.fouillesRestantes > 0 ? "Personne ne l'a encore fouillé." : "Tu as utilisé toutes tes fouilles."}
+              {enCours ? "Tu fouilles…" : fini ? "C'est l'heure. Trop tard pour fouiller." : "Personne ne l'a encore fouillé."}
             </p>
+            {evenement && !enCours && !fini && (
+              <p className="machine avertissement-lieu" style={{ margin: 0 }}>
+                {perdu
+                  ? `${evenement.texte.toUpperCase()} TU PEUX FOUILLER QUAND MÊME.`
+                  : `À ${heureNuit(pub.horloge, minuteEvt!).toUpperCase()} : ${evenement.texte.toUpperCase()}`}
+              </p>
+            )}
             <Pastilles total={pub.lieux.length} rang={rang} onChoisir={(i) => changer(pub.lieux[i].id)} />
           </>
         )}
@@ -123,24 +140,16 @@ export function Lieu({ etat, lieuId, actions }: { etat: EtatPartie; lieuId: stri
                 <a href={`#/p/${partie}`} className="gros-bouton papier-fond" style={{ fontSize: 22 }}>← LA SCÈNE</a>
                 <button className="gros-bouton contour" style={{ fontSize: 22 }} onClick={() => changer(suivant.id)}>LIEU SUIVANT →</button>
               </div>
-              <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)", textAlign: "center" }}>
-                {c.fouillesRestantes > 0 ? `${c.fouillesRestantes} FOUILLE${c.fouillesRestantes > 1 ? "S" : ""} RESTANTE${c.fouillesRestantes > 1 ? "S" : ""}` : "PLUS DE FOUILLE"}
-              </span>
+
             </>
           ) : (
             <>
-              <button className="bouton-fouiller" disabled={enCours || actions.occupe || c.fouillesRestantes <= 0} onClick={fouiller}>
+              <button className="bouton-fouiller" disabled={enCours || actions.occupe || fini} onClick={fouiller}>
                 <span className="titre" style={{ fontSize: 30 }}>{enCours ? "FOUILLE EN COURS…" : `FOUILLER ${lieu.nom.toUpperCase()}`}</span>
-                <span style={{ display: "flex", gap: 4 }} aria-label={`${c.fouillesRestantes} fouilles restantes sur ${etat.limites.fouilles}`}>
-                  {Array.from({ length: etat.limites.fouilles }, (_, i) => (
-                    <span key={i} className={i < c.fouillesRestantes ? "jeton plein" : "jeton"} />
-                  ))}
-                </span>
+                <span className="machine cout-fouille">{couts.fouille}&nbsp;MIN</span>
               </button>
               <span style={{ fontSize: 12, color: "var(--gris-clair)", textAlign: "center" }}>
-                {c.fouillesRestantes > 0
-                  ? `Il t'en reste ${c.fouillesRestantes} sur ${etat.limites.fouilles}. Une fouille ne se rattrape pas.`
-                  : "Glisse pour relire les lieux déjà fouillés."}
+                {fini ? "Glisse pour relire les lieux déjà fouillés." : "Une demi-heure de ta nuit. Tous les lieux ne parlent pas."}
               </span>
             </>
           )}

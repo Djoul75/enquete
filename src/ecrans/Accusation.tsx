@@ -4,35 +4,43 @@ import type { Actions } from "./Partie";
 import { Visage } from "../composants/Visage";
 import { Icone } from "../composants/NavPartie";
 import { visageDe } from "../lib/visuels";
-import { indicesTrouves } from "../lib/partie";
+import { aube, finDeNuit, heureNuit, indicesTrouves } from "../lib/partie";
 import { heuresRestantes, useMaintenant } from "../lib/routeur";
 import { mouvementReduit, useMemoire, vibrer } from "../lib/effets";
 
-type Choix = { etape: number; suspect: string | null; mobile: string | null; preuve: string | null };
-const ETAPES = ["QUI", "POURQUOI", "LA PREUVE"];
+// L'occasion et la preuve sont des pièces du mur, ou RIEN (dossier vide).
+const RIEN = "_rien";
+type Choix = { etape: number; suspect: string | null; mobile: string | null; occasion: string | null; preuve: string | null };
+type Champ = "suspect" | "mobile" | "occasion" | "preuve";
+const ETAPES = ["QUI", "POURQUOI", "L'OCCASION", "LA PREUVE"];
+const QUESTIONS = ["", "POUR QUELLE RAISON ?", "QU'EST-CE QUI MONTRE QU'IL A PU LE FAIRE ?", "QU'EST-CE QUI LE FERA CONDAMNER ?"];
 
-// L'accusation en trois étapes (qui, pourquoi, la preuve) puis un
-// procès-verbal à signer d'un appui long. Les choix sont gardés pendant la
-// session : on peut repartir vérifier le mur et revenir.
+// Le dossier en quatre étapes (qui, pourquoi, l'occasion, la preuve) puis un
+// procès-verbal à signer d'un appui long, daté de l'heure de la nuit. Les
+// choix sont gardés pendant la session : on peut repartir vérifier le mur et
+// revenir.
 export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actions }) {
   const pub = etat.affaire.public;
   const indices = indicesTrouves(etat);
   const maintenant = useMaintenant(30_000);
   const cle = `enquete-accuser-${etat.partie.id}`;
-  const [choix, setChoix] = useMemoire<Choix>(cle, { etape: 0, suspect: null, mobile: null, preuve: null });
+  const [choix, setChoix] = useMemoire<Choix>(cle, { etape: 0, suspect: null, mobile: null, occasion: null, preuve: null });
   const [sens, setSens] = useState<"avant" | "arriere">("avant");
   const [signe, setSigne] = useState(false);
   const suspect = pub.suspects.find((s) => s.id === choix.suspect);
   const mobile = pub.mobiles.find((m) => m.id === choix.mobile);
-  const preuve = indices.find((i) => i.id === choix.preuve);
+  const piece = (id: string | null) => (id === RIEN ? { id: RIEN, texte: "Rien de solide" } : indices.find((i) => i.id === id));
+  const occasion = piece(choix.occasion);
+  const preuve = piece(choix.preuve);
   const partie = etat.partie.id;
+  const heure = heureNuit(pub.horloge, etat.nuit.minutes);
 
   const aller = (etape: number) => {
     setSens(etape > choix.etape ? "avant" : "arriere");
     setChoix({ ...choix, etape });
     window.scrollTo(0, 0);
   };
-  const choisir = (champ: "suspect" | "mobile" | "preuve", id: string) => {
+  const choisir = (champ: Champ, id: string) => {
     vibrer(8);
     setChoix({ ...choix, [champ]: id });
   };
@@ -41,12 +49,13 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
     setSigne(true);
     vibrer([40, 30, 90]);
     await new Promise((r) => setTimeout(r, mouvementReduit() ? 0 : 900));
-    await actions.accuser(choix.suspect!, choix.mobile!, choix.preuve!);
+    const nul = (id: string | null) => (id === RIEN ? null : id);
+    await actions.accuser(choix.suspect!, choix.mobile!, nul(choix.occasion), nul(choix.preuve));
     sessionStorage.removeItem(cle);
   }
 
   // Une étape dont le choix manque (indice disparu, stockage effacé) ramène à ce choix.
-  const manque = !choix.suspect ? 0 : !choix.mobile ? 1 : !preuve ? 2 : 3;
+  const manque = !choix.suspect ? 0 : !choix.mobile ? 1 : !occasion ? 2 : !preuve ? 3 : 4;
   const etape = Math.min(choix.etape, manque);
   const groupes = Array.from(new Set(indices.map((i) => (i.type === "fouille" ? "Lieux" : i.source)))).map((nom) => ({
     nom,
@@ -62,15 +71,16 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
           </a>
         ) : (
           <button className="lien-retour" style={{ gap: 6 }} onClick={() => aller(etape - 1)} disabled={signe}>
-            <Icone nom="retour" taille={20} epaisseur={2} /> {etape === 3 ? "LA PREUVE" : ETAPES[etape - 1]}
+            <Icone nom="retour" taille={20} epaisseur={2} /> {ETAPES[etape - 1]}
           </button>
         )}
-        {etat.partie.echeance && (
-          <span className="machine rouge-texte" style={{ fontSize: 12 }}>{heuresRestantes(etat.partie.echeance, maintenant).toUpperCase()}</span>
-        )}
+        <span className="machine" style={{ fontSize: 12, display: "flex", gap: 10 }}>
+          <span style={{ color: aube(etat) ? "var(--rouge-texte)" : "var(--gris-clair)" }}>{aube(etat) ? finDeNuit(pub.horloge).court : `IL EST ${heure.toUpperCase()}`}</span>
+          {etat.partie.echeance && <span className="rouge-texte">{heuresRestantes(etat.partie.echeance, maintenant).toUpperCase()}</span>}
+        </span>
       </div>
 
-      {etape < 3 && (
+      {etape < 4 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div className="progression" aria-hidden="true">
             {ETAPES.map((_, i) => (
@@ -78,12 +88,13 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
             ))}
           </div>
           <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)" }}>
-            {etape + 1} / 3 · {etape === 0 ? `QUI A TUÉ ${pub.victime.toUpperCase()} ?` : etape === 1 ? "POUR QUELLE RAISON ?" : "QU'EST-CE QUI LE PROUVE ?"}
+            {etape + 1} / 4 · {etape === 0 ? `QUI A TUÉ ${pub.victime.toUpperCase()} ?` : QUESTIONS[etape]}
           </span>
           {etape > 0 && (
             <div className="machine" style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
               {suspect && <button className="puce" onClick={() => aller(0)}>{suspect.nom.toUpperCase()} ✎</button>}
               {etape > 1 && mobile && <button className="puce" onClick={() => aller(1)}>{mobile.texte.toUpperCase()} ✎</button>}
+              {etape > 2 && occasion && <button className="puce" onClick={() => aller(2)}>{occasion.id === RIEN ? "SANS OCCASION" : "OCCASION ✓"} ✎</button>}
             </div>
           )}
         </div>
@@ -126,31 +137,26 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
         )}
 
         {etape === 2 && (
-          <>
-            <h1 className="titre" style={{ fontSize: 52 }}>LA PREUVE</h1>
-            <span style={{ fontSize: 13, color: "var(--gris-clair)", marginTop: -6 }}>L'indice qui le confond. Un seul.</span>
-            {indices.length === 0 ? (
-              <span className="petit">Aucun indice trouvé. On n'accuse pas sans preuve : retourne interroger et fouiller.</span>
-            ) : (
-              groupes.map((g) => (
-                <div key={g.nom} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <span className="etiquette" style={{ marginTop: 4 }}>{g.nom}</span>
-                  {g.indices.map((i) => {
-                    const choisi = i.id === choix.preuve;
-                    return (
-                      <button key={i.id} className={`choix-preuve${choisi ? " choisi" : ""}`} aria-pressed={choisi} onClick={() => choisir("preuve", i.id)}>
-                        <span className="rond">{choisi && <Icone nom="coche" taille={14} epaisseur={3} />}</span>
-                        <span>{i.texte}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))
-            )}
-          </>
+          <ChoixPiece
+            titre="L'OCCASION"
+            aide="Ce qui montre qu'il a pu le faire : un retour, une porte, une heure."
+            groupes={groupes}
+            choisie={choix.occasion}
+            onChoisir={(id) => choisir("occasion", id)}
+          />
         )}
 
-        {etape === 3 && suspect && mobile && preuve && (
+        {etape === 3 && (
+          <ChoixPiece
+            titre="LA PREUVE"
+            aide="La pièce qui le fera condamner. Sans elle, il sera relâché."
+            groupes={groupes}
+            choisie={choix.preuve}
+            onChoisir={(id) => choisir("preuve", id)}
+          />
+        )}
+
+        {etape === 4 && suspect && mobile && occasion && preuve && (
           <div className={`proces-verbal${signe ? " signe" : ""}`}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, borderBottom: "3px double var(--encre)", paddingBottom: 8 }}>
               <span className="titre" style={{ fontSize: 26, letterSpacing: 2 }}>PROCÈS-VERBAL</span>
@@ -165,8 +171,14 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
               <span className="machine" style={{ fontSize: 13 }}><span style={{ color: "#55524c" }}>MOBILE :</span> {mobile.texte}</span>
             </Ligne>
             <Ligne onModifier={() => aller(2)} signe={signe} trait>
+              <span className="machine" style={{ fontSize: 13 }}><span style={{ color: "#55524c" }}>OCCASION :</span> {occasion.texte}</span>
+            </Ligne>
+            <Ligne onModifier={() => aller(3)} signe={signe} trait>
               <span className="machine" style={{ fontSize: 13 }}><span style={{ color: "#55524c" }}>PREUVE :</span> {preuve.texte}</span>
             </Ligne>
+            <span className="machine" style={{ fontSize: 12, color: "#55524c", textAlign: "right" }}>
+              Fait à {pub.cadre.ville}, à {heure}.
+            </span>
             <BoutonSigner signe={signe} occupe={actions.occupe} onSigne={signer} />
             {signe && <span className="machine tampon-pv">SIGNÉ</span>}
           </div>
@@ -175,17 +187,58 @@ export function Accusation({ etat, actions }: { etat: EtatPartie; actions: Actio
 
       {actions.erreur && <p className="erreur">{actions.erreur}</p>}
 
-      {etape < 3 && (
+      {etape < 4 && (
         <button
           className="gros-bouton papier-fond suivant"
-          disabled={(etape === 0 && !choix.suspect) || (etape === 1 && !choix.mobile) || (etape === 2 && !choix.preuve)}
+          disabled={(etape === 0 && !choix.suspect) || (etape === 1 && !choix.mobile) || (etape === 2 && !choix.occasion) || (etape === 3 && !choix.preuve)}
           onClick={() => aller(etape + 1)}
         >
-          <span>{etape === 0 ? "SUIVANT : POURQUOI" : etape === 1 ? "SUIVANT : LA PREUVE" : "RELIRE ET SIGNER"}</span>
+          <span>{etape < 3 ? `SUIVANT : ${ETAPES[etape + 1]}` : "RELIRE ET SIGNER"}</span>
           <span className="rouge">→</span>
         </button>
       )}
     </main>
+  );
+}
+
+// Une pièce du mur à verser au dossier, rangée par provenance, ou rien.
+function ChoixPiece({
+  titre,
+  aide,
+  groupes,
+  choisie,
+  onChoisir,
+}: {
+  titre: string;
+  aide: string;
+  groupes: { nom: string; indices: { id: string; texte: string }[] }[];
+  choisie: string | null;
+  onChoisir: (id: string) => void;
+}) {
+  return (
+    <>
+      <h1 className="titre" style={{ fontSize: 52 }}>{titre}</h1>
+      <span style={{ fontSize: 13, color: "var(--gris-clair)", marginTop: -6 }}>{aide}</span>
+      {groupes.length === 0 && <span className="petit">Ton mur est vide.</span>}
+      {groupes.map((g) => (
+        <div key={g.nom} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span className="etiquette" style={{ marginTop: 4 }}>{g.nom}</span>
+          {g.indices.map((i) => (
+            <BoutonPiece key={i.id} texte={i.texte} choisi={i.id === choisie} onClick={() => onChoisir(i.id)} />
+          ))}
+        </div>
+      ))}
+      <BoutonPiece texte="Rien de solide" choisi={choisie === RIEN} onClick={() => onChoisir(RIEN)} vide />
+    </>
+  );
+}
+
+function BoutonPiece({ texte, choisi, onClick, vide }: { texte: string; choisi: boolean; onClick: () => void; vide?: boolean }) {
+  return (
+    <button className={`choix-preuve${choisi ? " choisi" : ""}${vide ? " vide" : ""}`} aria-pressed={choisi} onClick={onClick}>
+      <span className="rond">{choisi && <Icone nom="coche" taille={14} epaisseur={3} />}</span>
+      <span>{texte}</span>
+    </button>
   );
 }
 

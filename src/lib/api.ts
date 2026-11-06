@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { EtatTampon } from "./tampons";
-import type { Accueil, Agence, Associes, Bureau, DossierPossible, EtatPartie, Moi } from "./types";
+import type { Accueil, Agence, Associes, Bureau, DossierPossible, EtatAncien, EtatPartie, Moi } from "./types";
 
 // Les refus écrits par le jeu (raise exception, code P0001) sont déjà en
 // français et parlent au joueur ; tout le reste est remplacé par un message
@@ -39,13 +39,15 @@ export const api = {
   ouvrirDossier: (partie: number) => rpc<number>("enquete_ouvrir_dossier", { p_partie: partie }),
 
   accueil: () => rpc<Accueil>("enquete_accueil"),
-  etat: (partie: number) => rpc<EtatPartie>("enquete_etat", { p_partie: partie }),
+  etat: (partie: number) => rpc<EtatPartie | EtatAncien>("enquete_etat", { p_partie: partie }),
   nouvellePartieSolo: () => rpc<number>("enquete_nouvelle_partie", { p_mode: "solo" }),
   poserQuestion: (partie: number, question: string) =>
     rpc<EtatPartie>("enquete_poser_question", { p_partie: partie, p_question: question }),
+  montrer: (partie: number, suspect: string, piece: string) =>
+    rpc<EtatPartie>("enquete_montrer", { p_partie: partie, p_suspect: suspect, p_piece: piece }),
   fouiller: (partie: number, lieu: string) => rpc<EtatPartie>("enquete_fouiller", { p_partie: partie, p_lieu: lieu }),
-  accuser: (partie: number, suspect: string, mobile: string, preuve: string) =>
-    rpc<EtatPartie>("enquete_accuser", { p_partie: partie, p_suspect: suspect, p_mobile: mobile, p_preuve: preuve }),
+  accuser: (partie: number, suspect: string, mobile: string, occasion: string | null, preuve: string | null) =>
+    rpc<EtatPartie>("enquete_accuser", { p_partie: partie, p_suspect: suspect, p_mobile: mobile, p_occasion: occasion, p_preuve: preuve }),
   sauverNotes: (partie: number, notes: string) => rpc<void>("enquete_sauver_notes", { p_partie: partie, p_notes: notes }),
   demanderAffaire: () => rpc<void>("enquete_demander_affaire"),
   tampons: () => rpc<EtatTampon[]>("enquete_tampons"),

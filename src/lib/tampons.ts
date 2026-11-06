@@ -17,10 +17,10 @@ export type EtatTampon = {
 };
 
 export const DEFINITIONS: Record<string, { nom: string; regle: string; haut: string; forme: Forme; encre: Encre }> = {
-  premiere: { nom: "PREMIÈRE AFFAIRE", regle: "Résoudre une affaire", haut: "★ BAPTÊME ★", forme: "rond", encre: "rouge" },
-  flair: { nom: "FLAIR", regle: "Coupable, mobile et preuve justes", haut: "TROIS SUR TROIS", forme: "rect", encre: "violet" },
-  econome: { nom: "5 QUESTIONS", regle: "Résoudre en 5 questions ou moins", haut: "ÉCONOMIE", forme: "ovale", encre: "bleu" },
-  sans_fouiller: { nom: "MAINS PROPRES", regle: "Résoudre sans fouiller", haut: "★ SANS FOUILLE ★", forme: "rond", encre: "noir" },
+  premiere: { nom: "PREMIÈRE AFFAIRE", regle: "Faire condamner un coupable", haut: "★ BAPTÊME ★", forme: "rond", encre: "rouge" },
+  flair: { nom: "FLAIR", regle: "Un dossier parfait : coupable, mobile, occasion et preuve", haut: "QUATRE SUR QUATRE", forme: "rect", encre: "violet" },
+  econome: { nom: "1 H 30 CHRONO", regle: "Faire condamner en 1 h 30 de nuit ou moins", haut: "AVANT L'AUBE", forme: "ovale", encre: "bleu" },
+  sans_fouiller: { nom: "MAINS PROPRES", regle: "Faire condamner sans fouiller", haut: "★ SANS FOUILLE ★", forme: "rond", encre: "noir" },
   eclair: { nom: "ÉCLAIR", regle: "Résoudre moins d'une heure après l'ouverture", haut: "EN MOINS D'1 H", forme: "triangle", encre: "noir" },
   noctambule: { nom: "NOCTAMBULE", regle: "Signer juste entre minuit et 5 h", haut: "SERVICE DE NUIT", forme: "ovale", encre: "violet" },
   serie: { nom: "EN SÉRIE", regle: "3 affaires résolues d'affilée", haut: "TROIS DE SUITE", forme: "rect", encre: "rouge" },

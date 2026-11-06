@@ -10,31 +10,44 @@ export function Regles() {
       </h1>
 
       <Regle numero="1" titre="Lire la scène">
-        Un meurtre, quatre suspects, des lieux. Le récit finit toujours sur un détail en rouge : il compte.
+        Un meurtre, des suspects, des lieux. Le récit finit toujours sur un détail en rouge, et il annonce ce qui va se passer cette nuit.
       </Regle>
-      <Regle numero="2" titre="Interroger">
-        Tu as <b>15 questions</b> en tout, à répartir entre les suspects. Chaque réponse peut cacher un indice, qui s'épingle sur ton mur.
+      <Regle numero="2" titre="La nuit tourne">
+        Tu arrives sur les lieux et <b>il te reste environ quatre heures</b> : jusqu'à l'aube, ou jusqu'à ce que le train entre en gare. Chaque geste prend du temps. À l'heure dite, tu signes avec ce que tu as.
       </Regle>
-      <Regle numero="3" titre="Fouiller">
-        Tu n'as que <b>3 fouilles</b> pour tous les lieux. Choisis bien : une fouille ne se rattrape pas.
+      <Regle numero="3" titre="Interroger">
+        Chaque suspect a quelques questions de départ. Ses réponses ouvrent des <b>relances</b>, et tes indices ouvrent des <b>pistes</b> (point rouge).
       </Regle>
-      <Regle numero="4" titre="Suivre les pistes">
-        Certains indices ouvrent de nouvelles questions. Un point rouge sur un suspect veut dire qu'une piste t'attend.
+      <Regle numero="4" titre="La cigarette">
+        C'est la patience du suspect. Une question qui fâche en brûle un bout ; quand elle est finie, il <b>se braque</b> et ne répond plus.
       </Regle>
-      <Regle numero="5" titre="Accuser">
-        Qui, pourquoi, et l'indice qui le prouve. Une seule signature, pas de retour en arrière.
+      <Regle numero="5" titre="Montrer une pièce">
+        Mets un indice de ton mur sous le nez d'un suspect. Face à une vraie preuve contre lui, un suspect braqué peut <b>craquer</b>, une seule fois.
+      </Regle>
+      <Regle numero="6" titre="Fouiller">
+        Une demi-heure par lieu, et tous ne parlent pas. Les témoins te disent où chercher. Certains lieux sont nettoyés à heure fixe.
+      </Regle>
+      <Regle numero="7" titre="Le dossier">
+        Qui, pourquoi, l'occasion, la preuve. Une seule signature, pas de retour en arrière.
       </Regle>
 
       <div className="regles-points">
-        <span className="etiquette">Les points</span>
-        <span><b>50</b> le bon coupable, <b>+10</b> au plus si tu as économisé tes questions</span>
-        <span><b>20</b> le bon mobile</span>
-        <span><b>20</b> une preuve qui tient</span>
-        <span className="petit" style={{ color: "var(--gris-clair)" }}>50 points ou plus : l'affaire est résolue. Sinon, classée.</span>
+        <span className="etiquette">L'heure de chaque geste</span>
+        <span><b>10</b> min par question</span>
+        <span><b>5</b> min pour une relance ou pour montrer une pièce</span>
+        <span><b>30</b> min par fouille</span>
+      </div>
+
+      <div className="regles-points">
+        <span className="etiquette">Le verdict</span>
+        <span><b>Condamné</b> le bon coupable, avec une preuve qui tient</span>
+        <span><b>Relâché</b> le bon coupable, mais pas de preuve</span>
+        <span><b>Erreur</b> tu as accusé un innocent</span>
+        <span className="petit" style={{ color: "var(--gris-clair)" }}>À plusieurs : le meilleur verdict gagne, puis le dossier signé le plus tôt dans la nuit.</span>
       </div>
 
       <Regle numero="+" titre="À plusieurs">
-        Donne rendez-vous à tes associés dans ton bureau, jusqu'à six privés. Quand tout le monde est assis, tu ouvres l'enveloppe : même affaire pour tous, chacun pour soi. Dès que quelqu'un accuse, les autres ont 24 heures pour accuser à leur tour. La vérité sort quand tout le monde a signé.
+        Donne rendez-vous à tes associés dans ton bureau, jusqu'à six privés. Quand tout le monde est assis, tu ouvres l'enveloppe : même affaire pour tous, chacun pour soi. Dès que quelqu'un signe, les autres ont 24 heures pour signer à leur tour. La vérité sort quand tout le monde a signé.
       </Regle>
 
       <Regle numero="★" titre="Tes associés">

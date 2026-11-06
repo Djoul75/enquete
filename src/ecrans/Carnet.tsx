@@ -5,7 +5,7 @@ import { BarreOnglets, EnTete } from "../composants/NavPartie";
 import { Visage } from "../composants/Visage";
 import { Decor } from "../composants/Decor";
 import { decorDe, visageDe } from "../lib/visuels";
-import { echangesAvec, nomCourt, pluriel } from "../lib/partie";
+import { echangesAvec, heureNuit, nomCourt, pluriel } from "../lib/partie";
 
 // Les notes du joueur et tout ce qu'on lui a dit, rangé par suspect, pour
 // relire sans refaire le tour de la scène.
@@ -86,12 +86,16 @@ export function Carnet({ etat, actions, lectureSeule }: { etat: EtatPartie; acti
                 vignette={<Visage v={visageDe(s)} cadrage="tete" />}
                 rond
                 titre={nomCourt(s.nom)}
-                compte={pluriel(echanges.length, "réponse")}
+                compte={pluriel(echanges.length, "échange")}
               >
                 {echanges.map((e) => (
-                  <span key={e.ref}>
-                    <span style={{ color: "var(--gris)" }}>{pub.questions.find((q) => q.id === e.ref)?.texte} </span>
+                  <span key={`${e.type}:${e.ref}`}>
+                    <span style={{ color: "var(--gris)" }}>
+                      {heureNuit(pub.horloge, e.minute)} · {e.type === "montrer" ? `Tu montres : ${e.piece?.texte}` : e.question}{" "}
+                    </span>
                     « {e.texte} »{e.didascalie && <i style={{ color: "var(--gris-clair)" }}> {e.didascalie}</i>}
+                    {e.braque && <b className="rouge-texte"> Braqué.</b>}
+                    {e.craque && <b> A craqué.</b>}
                   </span>
                 ))}
               </Volet>
@@ -107,7 +111,7 @@ export function Carnet({ etat, actions, lectureSeule }: { etat: EtatPartie; acti
             >
               {fouilles.map((f) => (
                 <span key={f.ref}>
-                  <span style={{ color: "var(--gris)" }}>{pub.lieux.find((l) => l.id === f.ref)?.nom} : </span>
+                  <span style={{ color: "var(--gris)" }}>{heureNuit(pub.horloge, f.minute)} · {pub.lieux.find((l) => l.id === f.ref)?.nom} : </span>
                   {f.texte}
                 </span>
               ))}

@@ -9,10 +9,7 @@ import { CoupsDeTampon } from "../composants/CoupDeTampon";
 import { Logo } from "../composants/Logo";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumeBureau, ResumePartie } from "../lib/types";
-
-// Limites fixées dans la base (enquete_etat) ; l'accueil ne les renvoie pas.
-const QUESTIONS = 15;
-const FOUILLES = 3;
+import { depuisDebut, finDeNuit, heureNuit } from "../lib/partie";
 
 export function Dossiers() {
   const { accueil, erreur, setErreur, charger } = useAccueil();
@@ -197,17 +194,20 @@ function CarteEnCours({ partie, maintenant, rang }: { partie: ResumePartie; main
         {partie.cadre.ville.toUpperCase()}, {partie.cadre.annee}
       </span>
       <span className="titre" style={{ fontSize: 38, maxWidth: "80%" }}>{partie.titre.toUpperCase()}</span>
-      {!partie.a_accuse && (
-        <span className="jauges">
-          <Jauge nom={`QUESTIONS ${partie.questions}/${QUESTIONS}`} part={partie.questions / QUESTIONS} />
-          <Jauge nom={`FOUILLES ${partie.fouilles}/${FOUILLES}`} part={partie.fouilles / FOUILLES} />
-          <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span className="machine" style={{ fontSize: 11 }}>{partie.indices} INDICE{partie.indices > 1 ? "S" : ""}</span>
-            <span style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-              {Array.from({ length: Math.min(partie.indices, 12) }, (_, i) => (
-                <span key={i} style={{ width: 7, height: 4, background: "var(--rouge)" }} />
-              ))}
+      {!partie.a_accuse && partie.horloge && partie.minutes !== null && (
+        <span className="nuit-carte">
+          <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <span className="machine" style={{ fontSize: 11 }}>
+              IL EST <b className="titre" style={{ fontSize: 22, fontWeight: 400 }}>{heureNuit(partie.horloge, partie.minutes).toUpperCase()}</b>
             </span>
+            <span className="machine" style={{ fontSize: 11 }}>{partie.indices} INDICE{partie.indices > 1 ? "S" : ""}</span>
+          </span>
+          <span className="nuit-carte-fil">
+            <span className="jauge" style={{ width: `${Math.min(100, (partie.minutes / depuisDebut(partie.horloge, partie.horloge.aube)) * 100)}%` }} />
+          </span>
+          <span className="machine" style={{ fontSize: 10, display: "flex", justifyContent: "space-between", color: "#55524c" }}>
+            <span>{heureNuit(partie.horloge, 0).toUpperCase()}</span>
+            <span>{finDeNuit(partie.horloge).court} · {heureNuit(partie.horloge, depuisDebut(partie.horloge, partie.horloge.aube)).toUpperCase()}</span>
           </span>
         </span>
       )}
@@ -221,17 +221,6 @@ function CarteEnCours({ partie, maintenant, rang }: { partie: ResumePartie; main
         {partie.a_accuse ? "VOIR LE DOSSIER" : "REPRENDRE L'ENQUÊTE"} <span className="rouge" style={{ fontSize: 26 }}>→</span>
       </span>
     </a>
-  );
-}
-
-function Jauge({ nom, part }: { nom: string; part: number }) {
-  return (
-    <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span className="machine" style={{ fontSize: 11 }}>{nom}</span>
-      <span style={{ display: "block", height: 4, background: "#c9c3b6" }}>
-        <span className="jauge" style={{ display: "block", height: 4, width: `${Math.min(100, part * 100)}%`, background: "var(--encre)" }} />
-      </span>
-    </span>
   );
 }
 

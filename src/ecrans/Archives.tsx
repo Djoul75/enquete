@@ -1,6 +1,7 @@
 import { useAccueil } from "../lib/accueil";
 import { OngletsAccueil } from "../composants/OngletsAccueil";
 import type { ResumePartie } from "../lib/types";
+import { heureDuJour, heureNuit, VERDICTS } from "../lib/partie";
 
 export function Archives() {
   const { accueil, erreur } = useAccueil(60_000);
@@ -10,24 +11,26 @@ export function Archives() {
     <main className="ecran">
       <span className="etiquette">Agence {accueil?.moi.pseudo ?? ""}</span>
       <h1 className="titre" style={{ fontSize: 64 }}>ARCHIVES</h1>
-      {accueil?.moi.record != null && (
+      {accueil && (accueil.moi.resolues > 0 || accueil.moi.classees > 0) && accueil.moi.record != null && (
         <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)" }}>
-          {accueil.moi.resolues} RÉSOLUE{accueil.moi.resolues > 1 ? "S" : ""} · {accueil.moi.classees} CLASSÉE{accueil.moi.classees > 1 ? "S" : ""} · RECORD {accueil.moi.record}
+          {accueil.moi.resolues} CONDAMNATION{accueil.moi.resolues > 1 ? "S" : ""} · {accueil.moi.classees} SANS SUITE · RECORD {heureDuJour(accueil.moi.record).toUpperCase()}
         </span>
       )}
       {erreur && <p className="erreur">{erreur}</p>}
       {accueil && archives.length === 0 && <p className="petit" style={{ margin: 0 }}>Aucune affaire close pour l'instant.</p>}
       <section>
         {archives.map((p, i) => {
-          const resolue = (p.score ?? 0) >= 50;
+          const ancienne = p.regle === 1;
+          const tampon = ancienne ? ((p.score ?? 0) >= 50 ? "RÉSOLUE" : "CLASSÉE") : p.verdict ? VERDICTS[p.verdict].court : "SANS DOSSIER";
+          const rouge = ancienne ? (p.score ?? 0) < 50 : p.verdict !== "condamne";
           return (
             <a key={p.id} href={`#/p/${p.id}`} className="ligne-archive apparait" style={{ animationDelay: `${Math.min(i, 10) * 40}ms`, borderBottom: i === archives.length - 1 ? "1px solid var(--trait)" : undefined }}>
               <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                 <span className="titre" style={{ fontSize: 23, lineHeight: 1 }}>{p.titre.toUpperCase()}</span>
                 <span className="petit" style={{ color: "var(--gris-clair)" }}>{sousTitre(p)}</span>
               </span>
-              <span className={`tampon${resolue ? "" : " rouge-texte"}`} style={{ transform: `rotate(${i % 2 ? 3 : -4}deg)` }}>
-                {resolue ? "RÉSOLUE" : "CLASSÉE"}
+              <span className={`tampon${rouge ? " rouge-texte" : ""}`} style={{ transform: `rotate(${i % 2 ? 3 : -4}deg)` }}>
+                {tampon}
               </span>
             </a>
           );
@@ -43,10 +46,16 @@ function dateCourte(iso: string): string {
 }
 
 function sousTitre(p: ResumePartie): string {
-  const score = p.score ?? 0;
-  if (p.mode === "solo") return `${dateCourte(p.created_at)} · Seul · ${score} pts`;
+  const date = dateCourte(p.created_at);
   const autres = p.autres ?? [];
-  if (autres.length === 1) return `${dateCourte(p.created_at)} · toi ${score}, ${autres[0].nom} ${autres[0].score ?? 0}`;
-  const rang = 1 + autres.filter((a) => (a.score ?? 0) > score).length;
-  return `${dateCourte(p.created_at)} · À ${autres.length + 1} · ${rang === 1 ? "1er" : `${rang}e`} · ${score} pts`;
+  if (p.regle === 1) {
+    const score = p.score ?? 0;
+    if (p.mode === "solo") return `${date} · Seul · ${score} pts · ancienne règle`;
+    const rang = 1 + autres.filter((a) => (a.score ?? 0) > score).length;
+    return `${date} · À ${autres.length + 1} · ${rang === 1 ? "1er" : `${rang}e`} · ancienne règle`;
+  }
+  const signe = p.accuse_minutes !== null && p.horloge ? `signé à ${heureNuit(p.horloge, p.accuse_minutes)}` : "pas signé";
+  if (p.mode === "solo") return `${date} · Seul · ${signe}`;
+  const rang = 1 + autres.filter((a) => (a.classement ?? 0) > (p.classement ?? 0)).length;
+  return `${date} · À ${autres.length + 1} · ${rang === 1 ? "1er" : `${rang}e`} · ${signe}`;
 }

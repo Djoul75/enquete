@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { EtatPartie } from "../lib/types";
 import { heuresRestantes, useMaintenant } from "../lib/routeur";
-import { indicesTrouves, pluriel } from "../lib/partie";
+import { heureNuit, indicesTrouves, pluriel } from "../lib/partie";
 import { Visage } from "../composants/Visage";
 import { visageDe } from "../lib/visuels";
 import { activerNotifications, etatNotifications } from "../lib/push";
@@ -15,7 +15,8 @@ export function Attente({ etat }: { etat: EtatPartie }) {
   const a = etat.moi.accusation!;
   const autres = etat.autres.filter((x) => !x.a_accuse).map((x) => x.nom);
   const indices = indicesTrouves(etat);
-  const preuve = indices.find((i) => i.id === a.preuve)?.texte;
+  const preuve = indices.find((i) => i.id === a.preuve)?.texte ?? "Pas de preuve";
+  const occasion = indices.find((i) => i.id === a.occasion)?.texte ?? "Pas d'occasion";
   const suspect = pub.suspects.find((s) => s.id === a.suspect);
   const mobile = pub.mobiles.find((m) => m.id === a.mobile)?.texte;
   const echeance = etat.partie.echeance;
@@ -31,6 +32,9 @@ export function Attente({ etat }: { etat: EtatPartie }) {
         <br />
         <span className="rouge">SIGNÉE.</span>
       </h1>
+      <span className="machine" style={{ fontSize: 12, color: "var(--gris-clair)", marginTop: -8 }}>
+        DOSSIER SIGNÉ À {heureNuit(pub.horloge, a.minutes).toUpperCase()} DANS TA NUIT
+      </span>
 
       <div className="deposition">
         {suspect && (
@@ -41,6 +45,7 @@ export function Attente({ etat }: { etat: EtatPartie }) {
         <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
           <span className="titre" style={{ fontSize: 24 }}>{suspect?.nom.toUpperCase()}</span>
           <span className="machine" style={{ fontSize: 11, color: "#55524c" }}>{mobile}</span>
+          <span className="machine" style={{ fontSize: 11, color: "#55524c" }}>{occasion}</span>
           <span className="machine" style={{ fontSize: 11, color: "#55524c" }}>{preuve}</span>
         </span>
         <span className="machine tampon-scelle">SCELLÉ</span>
